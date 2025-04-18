@@ -46,14 +46,25 @@ minetest.register_entity("moon:ant", {
             local yaw = math.random() * math.pi * 2
             self.object:set_yaw(yaw)
             
-            -- Set velocity more explicitly
+            -- Set velocity
             self.object:set_velocity({
                 x = math.cos(yaw) * 0.5,
-                y = 0,  -- Keep at 0 to stay on ground
+                y = 0,
                 z = math.sin(yaw) * 0.5,
             })
-            
-            -- Add a small debug message
+
+            -- BURROW occasionally
+            if math.random() < 0.2 then  -- 20% chance to burrow
+                local pos = self.object:get_pos()
+                local below = vector.add(pos, {x = 0, y = -1, z = 0})
+                local nodename = minetest.get_node(below).name
+                if nodename == "moon:regolith" then
+                    minetest.dig_node(below)
+                    self.object:set_pos({x = below.x, y = below.y + 0.5, z = below.z})
+                    minetest.log("action", "[ANTS MOD] Ant burrowed to " .. minetest.pos_to_string(below))
+                end
+            end
+
             if self.timer > 10 then
                 self.timer = 0
                 minetest.log("action", "[ANTS MOD] Ant at " .. 
@@ -111,15 +122,17 @@ minetest.register_chatcommand("spawnant", {
     end,
 })
 
--- Automatic ant spawning near regolith
+-- Automatic ant spawning near regolith (DISABLED)
+-- We'll rely only on initial spawn to avoid too many ants
+--[[ 
 minetest.register_abm({
     label = "Spawn Moon Ants",
     nodenames = {"moon:regolith"},
-    interval = 10, -- Check every 10 seconds (faster than before)
-    chance = 20, -- 5% chance per check (higher than before)
+    interval = 60, -- Check every minute (much slower)
+    chance = 200, -- 0.5% chance per check (much lower)
     action = function(pos, node)
         -- Check if there are already ants nearby
-        local objs = minetest.get_objects_inside_radius(pos, 10)
+        local objs = minetest.get_objects_inside_radius(pos, 20)
         local ant_count = 0
         
         for _, obj in ipairs(objs) do
@@ -129,8 +142,8 @@ minetest.register_abm({
             end
         end
         
-        -- Don't spawn too many ants in one area
-        if ant_count < 5 then
+        -- Don't spawn too many ants in one area and check global count
+        if ant_count < 3 then
             local spawn_pos = {
                 x = pos.x + math.random(-3, 3),
                 y = pos.y + 1,
@@ -146,6 +159,7 @@ minetest.register_abm({
         end
     end,
 })
+--]]
 
 -- Spawn ants when a player joins the game
 minetest.register_on_joinplayer(function(player)
