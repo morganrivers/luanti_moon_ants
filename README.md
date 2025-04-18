@@ -1,4 +1,4 @@
-![Self-replicating robotic ants on the Moon](ChatGPT Image Apr 18, 2025, 04_02_23 PM.png)
+![Self-replicating robotic ants on the Moon](chatgptimageants.png)
 
 Imagine a future where self-replicating machines slowly colonize the moon and asteroids in the solar system. 
 
