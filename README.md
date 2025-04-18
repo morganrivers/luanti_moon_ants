@@ -1,3 +1,5 @@
+![Self-replicating robotic ants on the Moon](ChatGPT Image Apr 18, 2025, 04_02_23 PM.png)
+
 Imagine a future where self-replicating machines slowly colonize the moon and asteroids in the solar system. 
 
 Maybe this would be a good thing, maybe a bad thing. Ideally, it's a good thing, and humanity designs such machines to be of love and grace. That is the intention of this little baby idea - to ensure that when humanity does create self replicating machines to colonize the solar system, it does so in a wise, compassionate way.
