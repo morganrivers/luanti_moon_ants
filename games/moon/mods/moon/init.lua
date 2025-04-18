@@ -1,6 +1,7 @@
 -- Moon Mod Initialization
 minetest.log("action", "[MOON MOD] Initializing moon mod...")
-
+local modname = minetest.get_current_modname()
+local modpath = minetest.get_modpath(modname)
 -- Load basic nodes first
 dofile(minetest.get_modpath("moon") .. "/nodes.lua")
 
@@ -25,7 +26,16 @@ dofile(minetest.get_modpath("moon") .. "/nests.lua")
 
 -- Load ant entities (after resources/energy systems)
 minetest.log("action", "[MOON MOD] Loading ant entities...")
-dofile(minetest.get_modpath("moon") .. "/ant.lua")
+-- helpers first
+dofile(modpath.."/util/table_extend.lua")
+
+-- ant logic (order does not matter because entity.lua
+-- pulls the modules when it runs)
+dofile(modpath.."/ant/constants.lua")
+dofile(modpath.."/ant/movement.lua")
+dofile(modpath.."/ant/digging.lua")
+dofile(modpath.."/ant/resource.lua")
+dofile(modpath.."/ant/entity.lua")
 
 -- Load environmental challenges
 minetest.log("action", "[MOON MOD] Loading environmental challenges...")

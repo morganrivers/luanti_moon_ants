@@ -20,6 +20,13 @@ local SPAWN_PROTECTION_RADIUS = 25  -- Keep spawn area relatively flat
 -- Resource configuration
 local SURFACE_RESOURCE_CHANCE = 0.02  -- 2% chance of exposed resources on surface
 local SHALLOW_RESOURCE_CHANCE = 0.05  -- 5% chance of shallow resources
+local CRATER_DEPTH_SCALE = 0.65   -- 1.0 = full depth, 0.5 = very shallow
+
+-- Return the procedural surface height at (x,z)
+local function surface_height_at(x, z)
+    local noise_val = math.sin(x * 0.05) * math.cos(z * 0.05) * 2
+    return math.floor(noise_val + 0.5)          -- 0 is the global “sea‑level”
+end
 
 ------------------------------------------------------------
 -- Generation callback
@@ -97,15 +104,24 @@ minetest.register_on_generated(function(minp, maxp)
     math.randomseed(seed)
     
     for i = 1, crater_count do
+        -- 1) decide the nominal depth first
+        local depth_rand   = math.random() * math.random()
+        local crater_depth = math.floor(
+            CRATER_MIN_DEPTH + depth_rand * (CRATER_MAX_DEPTH - CRATER_MIN_DEPTH)
+        )
+
+        -- 2) *after that* derive the shallower carve depth
+        local carve_depth  = math.floor(crater_depth * CRATER_DEPTH_SCALE)
+
+        -- 3) radius can use either depth; keep using the nominal one
+        local crater_radius = math.floor(crater_depth * 0.8)
+
+
+
         -- Random position within chunk
         local x = minp.x + math.random(0, chunk_size_x - 1)
         local z = minp.z + math.random(0, chunk_size_z - 1)
-        
-        -- Random crater depth - skewed distribution (most ~5-15, very few ~40-50)
-        -- Use exponential-like distribution with square root
-        local depth_rand = math.random() * math.random()  -- Square gives skew toward 0
-        local crater_depth = math.floor(CRATER_MIN_DEPTH + depth_rand * (CRATER_MAX_DEPTH - CRATER_MIN_DEPTH))
-        local crater_radius = math.floor(crater_depth * 0.8)  -- Slightly narrower craters
+        local crater_surface_y = surface_height_at(x, z)
         
         -- Check spawn protection - include crater radius
         local spawn_dist_sq = x*x + z*z
@@ -114,12 +130,15 @@ minetest.register_on_generated(function(minp, maxp)
         -- Only create crater if not in protected area
         if not is_protected then
             -- Create crater
-            for dy = -crater_depth, 0 do
-                -- Calculate radius at this depth (parabolic shape)
-                local depth_ratio = dy / -crater_depth
-                local slice_radius = math.floor(crater_radius * math.sqrt(1 - depth_ratio * depth_ratio))
-                local y = surface_y + dy
-                
+            -- Loop only down to the shallower bottom
+            for dy = -carve_depth, 0 do
+                -- ratio now ranges 0 … 1 again → no skip needed
+                local depth_ratio  = (-dy) / carve_depth
+                local slice_radius = math.floor(
+                    crater_radius * math.sqrt(1 - depth_ratio * depth_ratio)
+                )
+                local y = crater_surface_y + dy
+
                 -- Skip if outside chunk height range
                 if y < minp.y or y > maxp.y then
                     goto continue_dy
@@ -144,14 +163,14 @@ minetest.register_on_generated(function(minp, maxp)
                             
                             -- Add materials at the bottom
                             -- Check if we're at the bottom or within 3 blocks of the bottom
-                            local depth_from_bottom = crater_depth + dy
-                            
+                            local depth_from_bottom = carve_depth + dy
+
                             -- Resource-filled crater bottoms
                             if depth_from_bottom <= 3 then
                                 -- We're in the bottom 3 layers of the crater - fill with resources
                                 
                                 -- Crater resource type is determined by depth
-                                if crater_depth > 25 then
+                                if carve_depth > 20 then
                                     -- Deep craters (>25 blocks) have lots of ice
                                     local resource_roll = math.random()
                                     if resource_roll < 0.7 then  -- 70% chance
