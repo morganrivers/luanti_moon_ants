@@ -248,8 +248,64 @@ minetest.register_node("moon:nest_core", {
             moon_energy.add(pos, 100)
         end
         meta:set_string("infotext", "Fabrication Hub\nResource Storage Empty")
+        minetest.get_node_timer(pos):start(10)
+
     end,
     
+    -- periodic check for auto‐replication
+    on_timer = function(pos, elapsed)
+        local meta    = minetest.get_meta(pos)
+        local sil     = meta:get_int("regolith")
+        minetest.log("action", "[moon:nest_core] Timer tick at " .. minetest.pos_to_string(pos) .. ", silicon = " .. sil)
+        -- only replicate if we have enough silicon
+        if sil >= 10 then
+            -- look for an adjacent free spot (horizontal only)
+            local offsets = {
+                {x= 1, y=0, z= 0}, {x=-1, y=0, z= 0},
+                {x= 0, y=0, z= 1}, {x= 0, y=0, z=-1},
+                {x= 1, y=0, z= 1}, {x=-1, y=0, z= 1},
+                {x= 1, y=0, z=-1}, {x=-1, y=0, z=-1},
+            }
+            for _, off in ipairs(offsets) do
+                local p = vector.add(pos, off)
+                local name = minetest.get_node(p).name
+                if minetest.get_node(p).name == "air" then
+                    -- place new hub
+                    minetest.set_node(p, {name = "moon:nest_core"})
+                    -- initialize its meta exactly as on_construct
+                    local newm = minetest.get_meta(p)
+                    newm:set_int("regolith", 0)
+                    newm:set_int("metal",    0)
+                    newm:set_int("ice",      0)
+                    if moon_energy then
+                        moon_energy.add(p, 100)
+                    end
+
+                    newm:set_string("infotext", "Fabrication Hub\nResource Storage Empty")
+                    -- consume 10 silicon from the parent hub
+                    meta:set_int("regolith", sil - 10)
+                    -- update its infotext
+                    meta:set_string("infotext",
+                      string.format("Fabrication Hub\nRegolith: %d/10", sil - 10))
+
+                    minetest.log("action", "[moon:nest_core] Replicated to " .. minetest.pos_to_string(p))
+                    replicated = true
+                    break
+                else
+                    minetest.log("info", "[moon:nest_core] Position " .. minetest.pos_to_string(p) .. " blocked by: " .. name)
+                end
+            end
+            if not replicated then
+                minetest.log("warning", "[moon:nest_core] No free space to replicate from " .. minetest.pos_to_string(pos))
+                print("[moon:nest_core] No free space to replicate from " .. minetest.pos_to_string(pos))
+            end
+        else
+            minetest.log("info", "[moon:nest_core] Not enough silicon (" .. sil .. "/10) at " .. minetest.pos_to_string(pos))
+        end
+        -- always return true to keep the timer running
+        return true
+    end,
+
     -- Right-click to see inventory
     on_rightclick = function(pos, node, clicker, itemstack)
         local meta = minetest.get_meta(pos)
