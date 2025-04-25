@@ -19,6 +19,23 @@ local ant = {
 	inventory     = {regolith=0, metal=0, ice=0},
 	climb_wander     = 0,    -- >0 ⇒ in vertical‑climb mode
 	down_stair_mode  = false,
+    
+    -- ---------replication step properties ---------
+    builder         = false,   -- Is this a builder ant?
+    builder_target  = nil,     -- Vector pos 50 m away
+    nest_radius     = 3,       -- Size of cavity to dig
+    building_done   = false,   -- Set once the new nest is finished
+
+    -----------------------------------------------------------------
+    -- inside the great big `local ant = { … }` table
+    -----------------------------------------------------------------
+    -- hauler properties  ---------------------------------------
+    hauler          = false,   -- carries a hub from A to B
+    carrying_node   = nil,     -- name of the node we removed
+    delivery_pos    = nil,     -- where to put it down
+    delivery_done   = false,   -- set once placed
+
+
 }
 
 -----------------------------------------------------------------
@@ -102,7 +119,92 @@ function ant.deposit_resources(self, hub_pos)
     return true
 end
 
+-- dig a quick 7×7×3 cavity and install a hub
+local function build_nest(center, radius)
+    for dx = -radius, radius do
+        for dz = -radius, radius do
+            for dy = 0, 2 do              -- height = 3
+                local p = {x=center.x+dx, y=center.y-dy, z=center.z+dz}
+                minetest.dig_node(p)
+            end
+        end
+    end
+    local core = {x=center.x, y=center.y-2, z=center.z}
+    minetest.set_node(core, {name="moon:nest_core"})
+    local meta = minetest.get_meta(core)
+    meta:set_string("infotext", "Fabrication Hub\nResource Storage Empty")
+    if moon_energy then moon_energy.add(core, 100) end
+    local surf = {x=center.x, y=1, z=center.z}
+    minetest.set_node(surf,  {name="moon:solar_array"})
+    minetest.get_node_timer(surf):start(10)
+    minetest.log("action", "[Builder-ant] New nest carved at "
+                 .. minetest.pos_to_string(center))
+end
+
 function ant.on_step(self, dtime)
+    -------------------------------------------------------------
+    --  HAULER MODE   (runs instead of normal rover logic)
+    -------------------------------------------------------------
+    if self.hauler and not self.delivery_done then
+        local pos = self.object:get_pos()
+
+        -- 1.  Travel toward destination ----------------------------------
+        if vector.distance(pos, self.delivery_pos) > 1 then
+            local dir  = vector.direction(pos, self.delivery_pos); dir.y = 0
+            local card = (math.abs(dir.x) > math.abs(dir.z))
+                         and {x=(dir.x>0 and 1 or -1), y=0, z=0}
+                         or  {x=0, y=0, z=(dir.z>0 and 1 or -1)}
+            self.current_direction = card
+            self.object:set_yaw(minetest.dir_to_yaw(card))
+            self:dig_block()
+            self.dig_cooldown = 1.0
+            return
+        end
+
+        -- 2.  We have arrived – put the hub down -------------------------
+        local dest = vector.round(self.delivery_pos)
+        if minetest.get_node(dest).name == "air" then
+            minetest.set_node(dest, {name = self.carrying_node})
+        else
+            -- very unlikely, but try the block under our feet
+            dest.y = dest.y - 1
+            minetest.set_node(dest, {name = self.carrying_node})
+        end
+        self.delivery_done = true
+        self.hauler        = false              -- become a normal rover
+        minetest.log("action", "[Hauler-ant] Placed hub at "
+                     .. minetest.pos_to_string(dest))
+        return
+    end
+
+    -- -----------------------------------------------------------
+    --  BUILDER MODE   (runs instead of the normal digger logic)
+    -- -----------------------------------------------------------
+    if self.builder and not self.building_done then
+        local pos  = self.object:get_pos()
+        -- 1. Still travelling → head toward the target, digging as we go
+        if vector.distance(pos, self.builder_target) > 1 then
+            local dir = vector.direction(pos, self.builder_target); dir.y = 0
+            local card = (math.abs(dir.x) > math.abs(dir.z))
+                         and {x=(dir.x>0 and 1 or -1), y=0, z=0}
+                         or  {x=0, y=0, z=(dir.z>0 and 1 or -1)}
+            self.current_direction = card
+            self.object:set_yaw(minetest.dir_to_yaw(card))
+            self:dig_block()          -- reuse existing digger
+            self.dig_cooldown = 1.0
+            return                    -- skip normal rover behaviour
+        end
+        minetest.log("action", "[Builder-ant] Reached build site, starting nest carving")
+
+        -- 2. Arrived → carve cavity & drop hub
+        build_nest(vector.round(self.builder_target), self.nest_radius)
+        self.building_done = true
+        self.builder       = false    -- now behaves like an ordinary rover
+        minetest.log("action", "[Builder-ant] Finished nest. Switching to normal ant behavior")
+
+        return
+    end
+
     ---------------------------------------------------------------
     -- 0.  Choose / update target                                   
     ---------------------------------------------------------------
@@ -133,16 +235,17 @@ function ant.on_step(self, dtime)
         self.climb_wander = self.climb_wander - 1
     end
 
+    -- no longer doing this
     ---------------------------------------------------------------
     -- 1.  Acquire a fresh target if needed                        
     ---------------------------------------------------------------
-    if self.target_pos == nil and priority_resource ~= nil then
-        if priority_resource == "ice" then
-            self.target_pos = self:find_ice()
-        elseif priority_resource == "metal" then
-            self.target_pos = self:find_metal_ore()
-        end
-    end
+    -- if self.target_pos == nil and priority_resource ~= nil then
+    --     if priority_resource == "ice" then
+    --         self.target_pos = self:find_ice()
+    --     elseif priority_resource == "metal" then
+    --         self.target_pos = self:find_metal_ore()
+    --     end
+    -- end
 
     ---------------------------------------------------------------
     -- 2.  If we are directly beneath target and need to climb     
@@ -245,25 +348,24 @@ function ant.on_step(self, dtime)
         end
     end
     
-    -- Check for ice first
-    local ice_pos = self:find_ice()
+    -- -- Check for ice first
+    -- local ice_pos = self:find_ice()
     
-    if ice_pos then
-        -- Dig toward ice
-        if self:dig_toward_ice(ice_pos) then
-            -- Set cooldown to 1 second per digging action
-            self.dig_cooldown = 1.0
-        end
-    else
-        -- Normal digging in current direction
-        if self:dig_block() then
-            -- Set cooldown to 1 second per digging action
-            self.dig_cooldown = 1.0
-        end
+    -- if ice_pos then
+    --     -- Dig toward ice
+    --     if self:dig_toward_ice(ice_pos) then
+    --         -- Set cooldown to 1 second per digging action
+    --         self.dig_cooldown = 1.0
+    --     end
+    -- else
+    -- Normal digging in current direction
+    if self:dig_block() then
+        -- Set cooldown to 1 second per digging action
+        self.dig_cooldown = 1.0
     end
     
     -- Zero velocity while not moving (between digs)
-    self.object:set_velocity({x=0, y=0, z=0})
+    -- self.object:set_velocity({x=0, y=0, z=0})
 end
 
 -----------------------------------------------------------------

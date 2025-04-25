@@ -256,7 +256,7 @@ minetest.register_node("moon:nest_core", {
     on_timer = function(pos, elapsed)
         local meta    = minetest.get_meta(pos)
         local sil     = meta:get_int("regolith")
-        minetest.log("action", "[moon:nest_core] Timer tick at " .. minetest.pos_to_string(pos) .. ", silicon = " .. sil)
+        -- minetest.log("action", "[moon:nest_core] Timer tick at " .. minetest.pos_to_string(pos) .. ", silicon = " .. sil)
         -- only replicate if we have enough silicon
         if sil >= 10 then
             -- look for an adjacent free spot (horizontal only)
@@ -290,6 +290,50 @@ minetest.register_node("moon:nest_core", {
 
                     minetest.log("action", "[moon:nest_core] Replicated to " .. minetest.pos_to_string(p))
                     replicated = true
+
+                    -- 6. Spawn a dedicated builder ant to dig the next nest
+                    local dirs   = { {x= 50,y=0,z= 0}, {x=-50,y=0,z= 0},
+                                     {x=  0,y=0,z= 50}, {x=  0,y=0,z=-50} }
+                    local target = vector.add(p, dirs[math.random(1,4)])
+                    local ant    = minetest.add_entity(p, "moon:ant")
+                    if ant then
+                        local lua = ant:get_luaentity()
+                        if lua then
+                            lua.builder        = true
+                            lua.builder_target = target
+                            lua.nest_radius    = 3
+                        end
+                    end
+                    minetest.log("action", "[nest_core] Spawned builder ant at " .. minetest.pos_to_string(p) .. " targeting " .. minetest.pos_to_string(target))
+
+
+                    -- -----------------------------------------------------------------
+                    -- 7. 10 s later spawn a hauler that brings this surface hub inside
+                    -- -----------------------------------------------------------------
+                    minetest.after(10, function()
+                        minetest.log("action", "[Hauler-ant] checking for nest core" .. minetest.pos_to_string(p))
+
+                        -- Still there?  Still worth hauling?
+                        if minetest.get_node(p).name ~= "moon:nest_core" then return end
+
+                        minetest.log("action", "[Hauler-ant] Preparing to haul hub from " .. minetest.pos_to_string(p))
+
+                        -- Remove the hub block and spawn hauler with it “in the jaws”
+                        minetest.remove_node(p)
+
+                        local hauler = minetest.add_entity(p, "moon:ant")
+                        if hauler then
+                            local h = hauler:get_luaentity()
+                            if h then
+                                h.hauler        = true
+                                h.carrying_node = "moon:nest_core"
+                                -- the builder is heading for ‘target’; the cavity core is 2 blocks lower
+                                h.delivery_pos  = {x=target.x, y=target.y-2, z=target.z}
+                            end
+                        end
+                    end)
+
+
                     break
                 else
                     minetest.log("info", "[moon:nest_core] Position " .. minetest.pos_to_string(p) .. " blocked by: " .. name)

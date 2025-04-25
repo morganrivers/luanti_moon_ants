@@ -21,45 +21,45 @@ end
 ------------------------------------------------------------------
 --  FINDERS
 ------------------------------------------------------------------
-function D.find_ice(self, radius)
-	radius = radius or C.RESOURCE_SCAN_RADIUS
-	local pos = self.object:get_pos();  if not pos then return nil end
+-- function D.find_ice(self, radius)
+-- 	radius = radius or C.RESOURCE_SCAN_RADIUS
+-- 	local pos = self.object:get_pos();  if not pos then return nil end
 
-	local best, bestd = nil, radius+1
-	for x=-radius, radius do
-		for y=-radius, radius do
-			for z=-radius, radius do
-				local p = vector.add(pos,{x=x,y=y,z=z})
-				local n = minetest.get_node_or_nil(p)
-				if n and n.name == "moon:ice_rock" then
-					local d = vector.distance(pos,p)
-					if d < bestd then best,bestd = p,d end
-				end
-			end
-		end
-	end
-	return best
-end
+-- 	local best, bestd = nil, radius+1
+-- 	for x=-radius, radius do
+-- 		for y=-radius, radius do
+-- 			for z=-radius, radius do
+-- 				local p = vector.add(pos,{x=x,y=y,z=z})
+-- 				local n = minetest.get_node_or_nil(p)
+-- 				if n and n.name == "moon:ice_rock" then
+-- 					local d = vector.distance(pos,p)
+-- 					if d < bestd then best,bestd = p,d end
+-- 				end
+-- 			end
+-- 		end
+-- 	end
+-- 	return best
+-- end
 
-function D.find_metal_ore(self, radius)
-	radius = radius or C.RESOURCE_SCAN_RADIUS
-	local pos = self.object:get_pos();  if not pos then return nil end
+-- function D.find_metal_ore(self, radius)
+-- 	radius = radius or C.RESOURCE_SCAN_RADIUS
+-- 	local pos = self.object:get_pos();  if not pos then return nil end
 
-	local best, bestd = nil, radius+1
-	for x=-radius, radius do
-		for y=-radius, radius do
-			for z=-radius, radius do
-				local p = vector.add(pos,{x=x,y=y,z=z})
-				local n = minetest.get_node_or_nil(p)
-				if n and n.name == "moon:metal_ore" then
-					local d = vector.distance(pos,p)
-					if d < bestd then best,bestd = p,d end
-				end
-			end
-		end
-	end
-	return best
-end
+-- 	local best, bestd = nil, radius+1
+-- 	for x=-radius, radius do
+-- 		for y=-radius, radius do
+-- 			for z=-radius, radius do
+-- 				local p = vector.add(pos,{x=x,y=y,z=z})
+-- 				local n = minetest.get_node_or_nil(p)
+-- 				if n and n.name == "moon:metal_ore" then
+-- 					local d = vector.distance(pos,p)
+-- 					if d < bestd then best,bestd = p,d end
+-- 				end
+-- 			end
+-- 		end
+-- 	end
+-- 	return best
+-- end
 
 ------------------------------------------------------------------
 --  DIRECTIONAL DIG HELPERS  (identical logic, different targets)
@@ -131,9 +131,39 @@ local function collect_underfoot(self, pos)
     return false
 end
 
+local function exposed_to_sky(pos, max_air_height)
+    for dy = 1, max_air_height do
+        local p = {x = pos.x, y = pos.y + dy, z = pos.z}
+        local node = minetest.get_node_or_nil(p)
+        if not node then
+            minetest.log("warning", "[ROVER MOD] Node above "
+                .. minetest.pos_to_string(p) .. " is nil — assuming sky exposure")
+            return true  -- safer to treat nil as exposed
+        end
+        if node.name == "ignore" then
+            minetest.log("warning", "[ROVER MOD] Node above "
+                .. minetest.pos_to_string(p) .. " is 'ignore' — assuming sky exposure")
+            return true
+        end
+        if node.name ~= "air" then
+            return false  -- blocked!
+        end
+    end
+    return true
+end
 
 function D.dig_block(self)
-	local pos = self.object:get_pos()
+    -- Check for exposure to surface: 2 blocks of air above
+    local pos = self.object:get_pos()
+    if not pos then return false end
+
+    local rounded_pos = {
+        x = math.floor(pos.x + 0.5),
+        y = math.floor(pos.y + 0.5),
+        z = math.floor(pos.z + 0.5)
+    }
+
+
 	if not pos then return false end
 	if collect_underfoot(self, pos) then return true end
 
@@ -150,27 +180,38 @@ function D.dig_block(self)
 
 
 
-
     -- Calculate target position in front of rover
     local front_pos = {
         x = pos.x + self.current_direction.x,
         y = pos.y,  -- Same level
         z = pos.z + self.current_direction.z
     }
-    
-    -- Try to move on the same level first if path is clear
-    local node = minetest.get_node(front_pos)
+    local node = minetest.get_node(front_pos)   -- ← you accidentally deleted this
+
+    local front_2 = {
+        x = rounded_pos.x + self.current_direction.x * 2,
+        y = rounded_pos.y,
+        z = rounded_pos.z + self.current_direction.z * 2
+    }
+
+    if exposed_to_sky(front_pos, 100) or exposed_to_sky(front_2, 100) then
+        minetest.log("action", "[ROVER MOD] Surface exposure detected 1–2 blocks ahead at " ..
+            minetest.pos_to_string(front_pos) .. " or " .. minetest.pos_to_string(front_2) ..
+            " — digging down to stay hidden")
+        return self:dig_down_step()
+    end
+
+
     if node and node.name == "air" then
-        -- Path is clear, move forward
         self.object:set_pos(front_pos)
         self.steps_taken = self.steps_taken + 1
-        
-        -- Check for turn condition
+
         if self.steps_taken >= 10 and not self.returning then
             self:turn_90_degrees()
         end
         return true
     end
+
     
     -- Path is blocked - first try to climb up (prioritize climbing over digging)
     local up_front_pos = {
@@ -287,8 +328,36 @@ function D.dig_block(self)
 	    end
 	end
 
+    local pos = self.object:get_pos()
+    if not pos then return false end
+
+    local rounded_pos = {
+        x = math.floor(pos.x + 0.5),
+        y = math.floor(pos.y + 0.5),
+        z = math.floor(pos.z + 0.5)
+    }
+    -- Check both 1 and 2 steps ahead for exposure to sky
+    local front_1 = {
+        x = rounded_pos.x + self.current_direction.x,
+        y = rounded_pos.y,
+        z = rounded_pos.z + self.current_direction.z
+    }
+    local front_2 = {
+        x = rounded_pos.x + self.current_direction.x * 2,
+        y = rounded_pos.y,
+        z = rounded_pos.z + self.current_direction.z * 2
+    }
+
+    if exposed_to_sky(front_1, 100) or exposed_to_sky(front_2, 100) then
+        minetest.log("action", "[ROVER MOD] Surface exposure detected 1–2 blocks ahead at " ..
+            minetest.pos_to_string(front_1) .. " or " .. minetest.pos_to_string(front_2) ..
+            " — digging down to stay hidden")
+        return self:dig_down_step()
+    end
+
     -- If we can't climb up, then try to dig forward on the same level
     if node and node.name ~= "air" then
+
         local diggable = (node.name == "moon:regolith" or 
                          node.name == "default:stone" or 
                          node.name == "moon:bedrock" or
@@ -464,6 +533,19 @@ function D.place_block_for_climbing(self)
     return false
 end
 function D.dig_down_step(self)
+    local pos = self.object:get_pos()
+    if not pos then return false end
+
+    local rounded_pos = {
+        x = math.floor(pos.x + 0.5),
+        y = math.floor(pos.y + 0.5),
+        z = math.floor(pos.z + 0.5)
+    }
+
+   if rounded_pos.y <= -200 then
+       minetest.log("warning", "[ROVER MOD] Too deep at y=" .. rounded_pos.y .. ", refusing to dig further down")
+       return false
+   end
    local pos = self.object:get_pos(); if not pos then return false end
    if collect_underfoot(self, pos) then return true end
 
