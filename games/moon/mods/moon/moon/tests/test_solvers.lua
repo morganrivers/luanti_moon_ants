@@ -161,9 +161,9 @@ describe("Primitive engine solvers", function()
     local pos_hash_src = util.hash(P_SRC)
     local pos_hash_mid = util.hash(P_MID)
     local pos_hash_gnd = util.hash(P_GND)
-    ports_registry.add{pos_hash=pos_hash_src, face=0, class=ports_types.POWER, state={current_A=0, voltage=5.0}} -- Source: ideal 5V
-    ports_registry.add{pos_hash=pos_hash_mid, face=0, class=ports_types.POWER, state={current_A=0, voltage=0.0}} -- Node B: to measure
-    ports_registry.add{pos_hash=pos_hash_gnd, face=0, class=ports_types.POWER, state={current_A=0, voltage=0.0}} -- GND
+    ports_registry.add{pos_hash=pos_hash_src, face=0, class=types.POWER, state={current_A=0, voltage=5.0}} -- Source: ideal 5V
+    ports_registry.add{pos_hash=pos_hash_mid, face=0, class=types.POWER, state={current_A=0, voltage=0.0}} -- Node B: to measure
+    ports_registry.add{pos_hash=pos_hash_gnd, face=0, class=types.POWER, state={current_A=0, voltage=0.0}} -- GND
 
     -- Add ELECTRIC bonds: SRC <-> MID (R), MID <-> GND (C)
     bonds_registry.insert(pos_hash_src, 0, pos_hash_mid, 0, {type=bonds_types.ELECTRIC, R=100.0})   -- 100 ohm
@@ -203,8 +203,8 @@ describe("Primitive engine solvers", function()
     -- Add ACTUATOR port to A
     local pos_hash_A = util.hash(P_A)
     local pos_hash_B = util.hash(P_B)
-    ports_registry.add{pos_hash=pos_hash_A, face=0, class=ports_types.ACTUATOR, state={command=100.0, omega=0}}
-    ports_registry.add{pos_hash=pos_hash_B, face=0, class=ports_types.ACTUATOR, state={command=0.0, omega=0}}
+    ports_registry.add{pos_hash=pos_hash_A, face=0, class=types.ACTUATOR, state={command=100.0, omega=0}}
+    ports_registry.add{pos_hash=pos_hash_B, face=0, class=types.ACTUATOR, state={command=0.0, omega=0}}
     -- Add SHAFT bond with ratio
     bonds_registry.insert(pos_hash_A, 0, pos_hash_B, 0, {type=bonds_types.SHAFT, ratio=4.0, omega_rpm=0, torque_Nm=0})
     -- Build island

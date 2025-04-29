@@ -41,11 +41,11 @@ local function build_circuit_graph(island)
       node_map[pos_hash] = node_id
       -- Check for port
       local port_id = meta.port_id or 0
-      local port = (port_id ~= 0) and ports_api.read(port_id, "class") or nil
+      local port = (not port_id == 0) and ports_api.read(port_id, "class") or nil
       node_list[node_id] = {
         pos_hash = pos_hash,
         port_id = port_id,
-        is_port = (port_id ~= 0 and port == ports_types.POWER) or false,
+        is_port = ((not port_id == 0) and port == types.POWER) or false,
         G = 0,
         I = 0,
         V = 0,

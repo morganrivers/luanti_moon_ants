@@ -58,49 +58,53 @@ local function step(island, dt)
   -- First, for each voxel, sum heat flux from all thermal bonds
   for vx_hash, voxel in pairs(voxels) do
     local meta = vox_meta.read(voxel.pos)
-    if not meta then goto continue end
-    local T = meta.temperature or meta.temp or meta.T or 293
-    local mat = materials.get(meta.material_id)
-    if not mat then goto continue end
+    if not meta then
+      -- Skip if no metadata
+    else
+      local T = meta.temperature or meta.temp or meta.T or 293
+      local mat = materials.get(meta.material_id)
+      if not mat then
+        -- Skip if no material
+      else
+        local C = get_voxel_heat_capacity(meta)
+        local Q_total = 0
 
-    local C = get_voxel_heat_capacity(meta)
-    local Q_total = 0
-
-    -- Gather all bonds for this voxel
-    for b in bonds_api.pairs_for_voxel(vx_hash) do
-      if b.type == THERMAL_BOND then
-        -- Find the other voxel and its temp
-        local other_hash = (b.voxel_A == vx_hash) and b.voxel_B or b.voxel_A
-        local other_vox = voxels[other_hash]
-        if other_vox then
-          local metaB = vox_meta.read(other_vox.pos)
-          if metaB then
-            local TB = metaB.temperature or metaB.temp or metaB.T or 293
-            -- k is in W/m·K, assume bond length = 1 voxel edge, area = voxel face
-            local k = b.state.k or 1
-            local L = constants.VOXEL_EDGE or 0.05 -- m
-            local A = L * L                      -- m²
-            local dQ = (k * A / L) * (TB - T) * dt
-            Q_total = Q_total + dQ
+        -- Gather all bonds for this voxel
+        for b in bonds_api.pairs_for_voxel(vx_hash) do
+          if b.type == THERMAL_BOND then
+            -- Find the other voxel and its temp
+            local other_hash = (b.voxel_A == vx_hash) and b.voxel_B or b.voxel_A
+            local other_vox = voxels[other_hash]
+            if other_vox then
+              local metaB = vox_meta.read(other_vox.pos)
+              if metaB then
+                local TB = metaB.temperature or metaB.temp or metaB.T or 293
+                -- k is in W/m·K, assume bond length = 1 voxel edge, area = voxel face
+                local k = b.state.k or 1
+                local L = constants.VOXEL_EDGE or 0.05 -- m
+                local A = L * L                      -- m²
+                local dQ = (k * A / L) * (TB - T) * dt
+                Q_total = Q_total + dQ
+              end
+            end
           end
         end
+
+        -- Add Joule heating (from electrical)
+        Q_total = Q_total + sum_joule_heating(meta, dt)
+        -- Add reaction enthalpy (if present)
+        Q_total = Q_total + sum_reaction_enthalpy(meta, dt)
+
+        -- Integrate temperature
+        local delta_T = Q_total / C
+        if math.abs(delta_T) > eps then
+          changed_voxels[vx_hash] = true
+          dirty = true
+        end
+        meta.temperature = (meta.temperature or 293) + delta_T
+        vox_meta.write(voxel.pos, meta)
       end
     end
-
-    -- Add Joule heating (from electrical)
-    Q_total = Q_total + sum_joule_heating(meta, dt)
-    -- Add reaction enthalpy (if present)
-    Q_total = Q_total + sum_reaction_enthalpy(meta, dt)
-
-    -- Integrate temperature
-    local delta_T = Q_total / C
-    if math.abs(delta_T) > eps then
-      changed_voxels[vx_hash] = true
-      dirty = true
-    end
-    meta.temperature = (meta.temperature or 293) + delta_T
-    vox_meta.write(voxel.pos, meta)
-    ::continue::
   end
 
   return dirty

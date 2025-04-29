@@ -45,7 +45,7 @@ local function build_circuit_graph(island)
       node_list[node_id] = {
         pos_hash = pos_hash,
         port_id = port_id,
-        is_port = (not (port_id == 0) and port == ports_types.POWER) or false,
+        is_port = (not (port_id == 0) and port == types.POWER) or false,
         G = 0,
         I = 0,
         V = 0,

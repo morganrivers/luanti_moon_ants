@@ -52,14 +52,14 @@ function api.get(id)
   return registry[id]
 end
 
--- Returns a table mapping ids to definitions for all materials containing all bits in mask
+-- Returns an array of material definitions for all materials containing all bits in mask
 -- @param flag_mask (integer)
--- @return table: id -> def
+-- @return array of defs
 function api.find_by_flag(flag_mask)
   local result = {}
   for id, def in pairs(registry) do
     if bit.band(def.flags, flag_mask) == flag_mask then
-      result[id] = def
+      table.insert(result, def)
     end
   end
   return result

@@ -5,11 +5,9 @@ dofile(minetest.get_modpath("moon") .. "/constants.lua")
 dofile(minetest.get_modpath("moon") .. "/util.lua")
 dofile(minetest.get_modpath("moon") .. "/materials/registry.lua")
 dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
-dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
+local types = dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
 dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
 dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
-
-local PORT_CLASS = ports_types.classes
 dofile(minetest.get_modpath("moon") .. "/materials/flags.lua")
 
 -- Logic solver: step(island, dt)

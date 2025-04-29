@@ -9,7 +9,7 @@ dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
 dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
 
 -- RF solver constants
-local RF_PORT    = ports_types.RF_PORT
+local RF_PORT    = types.RF_PORT
 local RF_RANGE   = constants.RF_RANGE or 32 -- meters; fallback if not set in constants
 
 -- Minetest vector helpers

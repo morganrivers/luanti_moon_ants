@@ -25,31 +25,32 @@ local function flood_fill(seed_pos_hash, seen_voxels, seen_bonds, seen_ports)
     local pos_hash = queue[q_head]
     q_head = q_head + 1
 
-    if seen_voxels[pos_hash] then goto continue end
-    seen_voxels[pos_hash] = true
+    if seen_voxels[pos_hash] then
+      -- Skip if already seen
+    else
+      seen_voxels[pos_hash] = true
 
-    -- Check for ports on this voxel
-    for _, port in ipairs(ports_registry.ports_for_voxel(pos_hash)) do
-      seen_ports[port.id] = true
-    end
+      -- Check for ports on this voxel
+      for _, port in ipairs(ports_registry.ports_for_voxel(pos_hash)) do
+        seen_ports[port.id] = true
+      end
 
-    -- For every bond touching this voxel
-    for bond_key, bond in bonds_registry.pairs_for_voxel(pos_hash) do
-      seen_bonds[bond_key] = true
+      -- For every bond touching this voxel
+      for bond_key, bond in bonds_registry.pairs_for_voxel(pos_hash) do
+        seen_bonds[bond_key] = true
 
-      local other_hash = bond.pos_hash_A == pos_hash and bond.pos_hash_B or bond.pos_hash_A
-      if not seen_voxels[other_hash] then
-        q_tail = q_tail + 1
-        queue[q_tail] = other_hash
+        local other_hash = bond.pos_hash_A == pos_hash and bond.pos_hash_B or bond.pos_hash_A
+        if not seen_voxels[other_hash] then
+          q_tail = q_tail + 1
+          queue[q_tail] = other_hash
+        end
+      end
+
+      -- Stop if we hit max
+      if util.table_count(seen_voxels) >= ISLAND_MAX_VOXELS then
+        break
       end
     end
-
-    -- Stop if we hit max
-    if util.table_count(seen_voxels) >= ISLAND_MAX_VOXELS then
-      break
-    end
-
-    ::continue::
   end
 
   return seen_voxels, seen_bonds, seen_ports

@@ -29,7 +29,7 @@ end
 function registry.add(pos_hash, face, class, state)
   assert(type(pos_hash) == "number", "pos_hash must be number")
   assert(face >= 0 and face <= 5, "face must be 0..5")
-  assert(types[class], "Invalid port class")
+  assert(types.descriptors[class], "Invalid port class")
   local id = next_id()
   local state_tbl = state or {}
   ports[id] = {

@@ -5,10 +5,10 @@ dofile(minetest.get_modpath("moon") .. "/constants.lua")
 dofile(minetest.get_modpath("moon") .. "/util.lua")
 -- dofile(minetest.get_modpath("moon") .. "/ports.lua")
 dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
-dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
+local types = dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
 
 -- RF solver constants
-local RF_PORT    = ports_types.RF_PORT
+local RF_PORT    = types.RF_PORT
 local RF_RANGE   = constants.RF_RANGE or 32 -- meters; fallback if not set in constants
 
 -- Minetest vector helpers
@@ -97,30 +97,25 @@ local function step(island, dt)
     local tx = _rf_transmitters[i]
     local tx_pos = get_world_pos_from_port(tx)
     local payload = tx.state.tx
-    if not payload then
-      goto continue_tx
-    end
-
-    -- Optionally, allow transmitters to receive their own packets (loopback)
-    for j=1,#_rf_receivers do
-      local rx = _rf_receivers[j]
-      if rx.id == tx.id then goto continue_rx end
-      local rx_pos = get_world_pos_from_port(rx)
-      local d2 = distance_squared(tx_pos, rx_pos)
-      if d2 > RF_RANGE*RF_RANGE then goto continue_rx end
-
-      if check_los(tx_pos, rx_pos) then
-        transmit_rf_packet(tx, rx, payload)
-        dirty = true
+    if payload then
+      -- Optionally, allow transmitters to receive their own packets (loopback)
+      for j=1,#_rf_receivers do
+        local rx = _rf_receivers[j]
+        if rx.id ~= tx.id then
+          local rx_pos = get_world_pos_from_port(rx)
+          local d2 = distance_squared(tx_pos, rx_pos)
+          if d2 <= RF_RANGE*RF_RANGE then
+            if check_los(tx_pos, rx_pos) then
+              transmit_rf_packet(tx, rx, payload)
+              dirty = true
+            end
+          end
+        end
       end
 
-      ::continue_rx::
+      -- Clear the tx field for this tick (one-shot semantics)
+      tx.state.tx = nil
     end
-
-    -- Clear the tx field for this tick (one-shot semantics)
-    tx.state.tx = nil
-
-    ::continue_tx::
   end
 
   return dirty
