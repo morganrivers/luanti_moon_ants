@@ -1,5 +1,5 @@
 -- materials/registry.lua
--- local flags = require("materials.flags") # DMR must comment back in
+dofile(minetest.get_modpath("moon") .. "/materials/flags.lua")
 
 local registry = {}
 local _by_flag = {}
@@ -19,24 +19,24 @@ local api = {}
 
 -- Adds or replaces a material definition
 -- @param id (string): short key, e.g. "Fe"
--- @param def (table): {name, flags, ρ, ε_r, μ_r, density, baseline_T, reaction_id}
+-- @param def (table): {name, flags, rho, epsilon_r, mu_r, density, baseline_T, reaction_id}
 function api.add(id, def)
-  assert(type(id) == "string" and id ~= "", "Material id must be nonempty string")
+  assert(type(id) == "string" and not (id == ""), "Material id must be nonempty string")
   assert(type(def) == "table", "Material definition must be a table")
-  assert(type(def.name) == "string" and def.name ~= "", "Material must have a name")
+  assert(type(def.name) == "string" and not (def.name == ""), "Material must have a name")
   assert(type(def.flags) == "number" and def.flags >= 0 and def.flags <= 0xFF, "flags must be uint8")
-  assert(type(def["ρ"]) == "number", "ρ (resistivity) must be a number")
-  assert(type(def["ε_r"]) == "number", "ε_r (relative permittivity) must be a number")
-  assert(type(def["μ_r"]) == "number", "μ_r (relative permeability) must be a number")
+  assert(type(def["rho"]) == "number", "rho (resistivity) must be a number")
+  assert(type(def["epsilon_r"]) == "number", "epsilon_r (relative permittivity) must be a number")
+  assert(type(def["mu_r"]) == "number", "mu_r (relative permeability) must be a number")
   assert(type(def.density) == "number", "density must be a number")
   assert(type(def.baseline_T) == "number", "baseline_T must be a number")
   assert(type(def.reaction_id) == "number" and def.reaction_id >= 0 and def.reaction_id <= 0xFFFF, "reaction_id must be uint16")
   registry[id] = {
     name        = def.name,
     flags       = def.flags,
-    ["ρ"]       = def["ρ"],
-    ["ε_r"]     = def["ε_r"],
-    ["μ_r"]     = def["μ_r"],
+    ["rho"]       = def["rho"],
+    ["epsilon_r"]     = def["epsilon_r"],
+    ["mu_r"]     = def["mu_r"],
     density     = def.density,
     baseline_T  = def.baseline_T,
     reaction_id = def.reaction_id,
@@ -66,3 +66,4 @@ end
 
 api._registry = registry
 return api
+

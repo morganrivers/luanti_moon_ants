@@ -1,11 +1,11 @@
 -- solvers/mechanical.lua
-local constants   = require("constants")
-local util        = require("util")
-local bonds       = require("bonds.registry")
-local bond_types  = require("bonds.types")
-local ports       = require("ports.registry")
-local ports_api   = require("ports.api")
-local voxels      = require("voxels.metadata")
+dofile(minetest.get_modpath("moon") .. "/constants.lua")
+dofile(minetest.get_modpath("moon") .. "/util.lua")
+dofile(minetest.get_modpath("moon") .. "/bonds/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/bonds/types.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
+dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
 
 -- Caches to minimize table churn
 local tmp_chain       = {}
@@ -88,7 +88,7 @@ local function propagate_shaft_rpm(chain, island)
     if entry.incoming_bond and entry.incoming_bond.type == bond_types.SHAFT then
       local ratio = entry.incoming_bond.ratio or 1
       rpm = rpm * ratio
-      if entry.incoming_bond.omega_rpm ~= rpm then
+      if not (entry.incoming_bond.omega_rpm == rpm) then
         entry.incoming_bond.omega_rpm = rpm
         changed = true
       end
@@ -96,7 +96,7 @@ local function propagate_shaft_rpm(chain, island)
     -- For all SHAFT bonds attached to this voxel, set their omega_rpm
     for bond_rec in bonds.pairs_for_voxel(entry.pos_hash) do
       if bond_rec.type == bond_types.SHAFT then
-        if bond_rec.omega_rpm ~= rpm then
+        if not (bond_rec.omega_rpm == rpm) then
           bond_rec.omega_rpm = rpm
           changed = true
         end
@@ -123,7 +123,7 @@ local function propagate_hinge_slider(island)
         -- Integrate theta
         local theta = (bond_rec.theta_deg or 0) + rpm * 360/60 * constants.TICK_LENGTH
         theta = theta % 360
-        if bond_rec.theta_deg ~= theta then
+        if not (bond_rec.theta_deg == theta) then
           bond_rec.theta_deg = theta
           changed = true
         end
@@ -138,7 +138,7 @@ local function propagate_hinge_slider(island)
         end
         -- Integrate offset (assume 1mm per rpm per tick for test)
         local offset = (bond_rec.offset_mm or 0) + rpm * 1 * constants.TICK_LENGTH
-        if bond_rec.offset_mm ~= offset then
+        if not (bond_rec.offset_mm == offset) then
           bond_rec.offset_mm = offset
           changed = true
         end
@@ -167,7 +167,7 @@ local function update_voxel_pose(island)
       -- Quantize to 24 facedir steps (Minetest uses 24)
       local facedir = math.floor(yaw/360 * 24) % 24
       -- Write back (placeholder: actual node update omitted)
-      if vmeta.facedir ~= facedir then
+      if not (vmeta.facedir == facedir) then
         vmeta.facedir = facedir
         voxels.write(pos, vmeta)
         changed = true
@@ -225,3 +225,4 @@ end
 return {
   step = step
 }
+

@@ -1,7 +1,7 @@
 -- util.lua
 -- Pure helper functions (vector math, object pools, bit ops) with zero dependencies on domain logic
 
-local util = {}
+util = {}
 
 -- ================================
 -- Vector3 integer math
@@ -75,13 +75,23 @@ end
 -- ================================
 
 -- 6 axis directions, Minetest order: {+X,-X,+Y,-Y,+Z,-Z}
-util.AXIS6 = {
-  { x= 1, y= 0, z= 0 },  -- +X
-  { x=-1, y= 0, z= 0 },  -- -X
-  { x= 0, y= 1, z= 0 },  -- +Y
-  { x= 0, y=-1, z= 0 },  -- -Y
-  { x= 0, y= 0, z= 1 },  -- +Z
-  { x= 0, y= 0, z=-1 },  -- -Z
+-- util.axis_dirs = {
+--   { x= 1, y= 0, z= 0 },  -- +X
+--   { x=-1, y= 0, z= 0 },  -- -X
+--   { x= 0, y= 1, z= 0 },  -- +Y
+--   { x= 0, y=-1, z= 0 },  -- -Y
+--   { x= 0, y= 0, z= 1 },  -- +Z
+--   { x= 0, y= 0, z=-1 },  -- -Z
+-- }
+
+-- util.lua  – overwrite the table
+util.axis_dirs = {
+  [0] = {x=-1, y= 0, z= 0}, -- -X
+  [1] = {x= 1, y= 0, z= 0}, -- +X
+  [2] = {x= 0, y= 1, z= 0}, -- +Y
+  [3] = {x= 0, y=-1, z= 0}, -- -Y
+  [4] = {x= 0, y= 0, z= 1}, -- +Z
+  [5] = {x= 0, y= 0, z=-1}, -- -Z
 }
 
 -- Returns the opposite face index (1..6)
@@ -142,4 +152,15 @@ function util.make_pool(new_fn)
   return pool
 end
 
+-- ======================================
+-- Coordinate hash (x,y,z → 32-bit int)
+-- ======================================
+local PRIME1, PRIME2, PRIME3 = 73856093, 19349663, 83492791
+function util.hash(pos)
+  local h = (pos.x * PRIME1 + pos.y * PRIME2 + pos.z * PRIME3) % 0x100000000
+  return h
+end
+
+
 return util
+

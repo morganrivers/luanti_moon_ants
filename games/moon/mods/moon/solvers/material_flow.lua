@@ -1,14 +1,13 @@
-```lua
 -- solvers/material_flow.lua
 -- Moves item entities via gravity pipes and MATERIAL_IO ports; handles powder deposition
 
-local constants      = require("constants")
-local util           = require("util")
-local ports_types    = require("ports/types")
-local ports_registry = require("ports/registry")
-local ports_api      = require("ports/api")
-local voxels_meta    = require("voxels/metadata")
-local materials_reg  = require("materials/registry")
+dofile(minetest.get_modpath("moon") .. "/constants.lua")
+dofile(minetest.get_modpath("moon") .. "/util.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
+dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
+dofile(minetest.get_modpath("moon") .. "/materials/registry.lua")
 local moon           = rawget(_G, "moon") or {}
 
 local DIRS = util.DIRS or {
@@ -215,4 +214,3 @@ end
 return {
   step = step,
 }
-```

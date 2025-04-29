@@ -1,10 +1,10 @@
 -- islands/queue.lua
 -- Priority queue scheduling islands for solver passes while skipping idle chunks
 
-local constants = require("constants")
+dofile(minetest.get_modpath("moon") .. "/constants.lua")
 
-local Queue = {}
-Queue.__index = Queue
+queue = {}
+queue.__index = queue
 
 -- Min-heap, keyed by next_tick_time.
 local function sift_up(heap, idx)
@@ -31,7 +31,7 @@ local function sift_down(heap, idx)
     if right <= len and heap[right][1] < heap[smallest][1] then
       smallest = right
     end
-    if smallest ~= idx then
+    if not (smallest == idx) then
       heap[idx], heap[smallest] = heap[smallest], heap[idx]
       idx = smallest
     else
@@ -45,7 +45,7 @@ local function island_id(island)
   return tostring(island)
 end
 
-local M = {}
+-- M = {} -- DMR changed from "M" to queue
 
 -- The heap: { {next_tick_time, island}, ... }
 local heap = {}
@@ -53,7 +53,7 @@ local heap = {}
 local index_map = {}
 
 -- Push or update an island's scheduled time.
-function M.push_or_update(island, next_tick_time)
+function queue.push_or_update(island, next_tick_time)
   local id = island_id(island)
   local idx = index_map[id]
   if idx then
@@ -75,12 +75,12 @@ function M.push_or_update(island, next_tick_time)
 end
 
 -- Remove an island from the queue (e.g. if destroyed/unloaded)
-function M.remove(island)
+function queue.remove(island)
   local id = island_id(island)
   local idx = index_map[id]
   if not idx then return end
   local last = #heap
-  if idx ~= last then
+  if not (idx == last) then
     heap[idx] = heap[last]
     local moved_island = heap[idx][2]
     index_map[island_id(moved_island)] = idx
@@ -96,7 +96,7 @@ function M.remove(island)
 end
 
 -- Returns a table of all islands scheduled at or before 'now'.
-function M.pop_due(now)
+function queue.pop_due(now)
   local due = {}
   while #heap > 0 and heap[1][1] <= now do
     local entry = heap[1]
@@ -116,7 +116,7 @@ function M.pop_due(now)
 end
 
 -- For debugging: return the scheduled time for a given island
-function M.scheduled_time(island)
+function queue.scheduled_time(island)
   local id = island_id(island)
   local idx = index_map[id]
   if idx then
@@ -126,8 +126,8 @@ function M.scheduled_time(island)
 end
 
 -- For debugging: count of scheduled islands
-function M.size()
+function queue.size()
   return #heap
 end
 
-return M
+

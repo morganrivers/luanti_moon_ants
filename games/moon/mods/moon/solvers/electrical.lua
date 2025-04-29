@@ -1,14 +1,14 @@
 -- solvers/electrical.lua
 -- Kirchhoff node solver producing voltages/currents for each ELECTRIC bond graph
 
-local constants      = require("constants")
-local util           = require("util")
-local materials      = require("materials/registry")
-local bonds_types    = require("bonds/types")
-local bonds_registry = require("bonds/registry")
-local ports_types    = require("ports/types")
-local ports_api      = require("ports/api")
-local voxels_meta    = require("voxels/metadata")
+dofile(minetest.get_modpath("moon") .. "/constants.lua")
+dofile(minetest.get_modpath("moon") .. "/util.lua")
+dofile(minetest.get_modpath("moon") .. "/materials/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/bonds/types.lua")
+dofile(minetest.get_modpath("moon") .. "/bonds/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
+dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
 
 local MAX_ITERS      = constants.MAX_SOLVER_ITERS or 128
 local VOLTAGE_EPS    = 1e-5
@@ -41,11 +41,11 @@ local function build_circuit_graph(island)
       node_map[pos_hash] = node_id
       -- Check for port
       local port_id = meta.port_id or 0
-      local port = (port_id ~= 0) and ports_api.read(port_id, "class") or nil
+      local port = not (port_id == 0) and ports_api.read(port_id, "class") or nil
       node_list[node_id] = {
         pos_hash = pos_hash,
         port_id = port_id,
-        is_port = (port_id ~= 0 and port == ports_types.POWER) or false,
+        is_port = (not (port_id == 0) and port == ports_types.POWER) or false,
         G = 0,
         I = 0,
         V = 0,
@@ -68,8 +68,8 @@ local function build_circuit_graph(island)
           local matA  = materials.get(metaA.material_id)
           local metaB = voxels_meta.read(bond.pos_B)
           local matB  = materials.get(metaB.material_id)
-          local rhoA  = (matA and matA.ρ) or 1.0
-          local rhoB  = (matB and matB.ρ) or 1.0
+          local rhoA  = (matA and matA.rho) or 1.0
+          local rhoB  = (matB and matB.rho) or 1.0
           local R     = (rhoA + rhoB) * constants.VOXEL_EDGE_LEN / 2
           table.insert(bond_edges, {a = nodeA, b = nodeB, R = R, bond = bond})
         end
@@ -81,15 +81,15 @@ end
 local function apply_port_currents()
   -- Set up current injections and voltage constraints from POWER ports
   for node_id, node in pairs(node_list) do
-    if node.is_port and node.port_id ~= 0 then
+    if node.is_port and not (node.port_id == 0) then
       -- Ports may act as voltage source (V), or current source (I), or sink (load)
       local V_set = ports_api.read(node.port_id, "voltage")
       local I_set = ports_api.read(node.port_id, "current_A")
-      if V_set ~= nil then
+      if not (V_set == nil) then
         node.V = V_set
         node.G = 1e9  -- Pin voltage: acts as ideal voltage source (large conductance)
         node.I = 0
-      elseif I_set ~= nil then
+      elseif not (I_set == nil) then 
         node.I = I_set
         node.G = 0
       end
@@ -149,7 +149,7 @@ end
 local function write_results_to_ports()
   local changed = false
   for node_id, node in pairs(node_list) do
-    if node.is_port and node.port_id ~= 0 then
+    if node.is_port and not (node.port_id == 0) then
       -- Write computed voltage back to port state
       local oldV = ports_api.read(node.port_id, "voltage")
       if math.abs((oldV or 0) - node.V) > VOLTAGE_EPS then

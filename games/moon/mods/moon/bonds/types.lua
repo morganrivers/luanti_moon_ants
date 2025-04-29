@@ -1,7 +1,7 @@
--- bonds/types.lua
+-- bonds/bonds_types.lua
 -- Enumerates bond kinds (RIGID,HINGE,SLIDER,SHAFT,ELECTRIC,THERMAL) and their per-bond state fields
 
-local types = {
+bonds_types = {
   -- Enum for bond kinds
   RIGID    = 1,
   HINGE    = 2,
@@ -41,4 +41,4 @@ local types = {
   }
 }
 
-return types
+return bonds_types

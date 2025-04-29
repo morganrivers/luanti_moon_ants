@@ -34,7 +34,7 @@ end
 local function encode_f32_le(num)
   -- Use LuaJIT FFI if available for fast float encoding
   if jit and jit.status and require then
-    local ffi = require("ffi")
+dofile(minetest.get_modpath("moon") .. "/ffi.lua")
     local arr = ffi.new("float[1]", num)
     return ffi.string(arr, 4)
   else
@@ -44,7 +44,7 @@ local function encode_f32_le(num)
     local mantissa, exponent = math.frexp(num)
     if num == 0 then
       return "\0\0\0\0"
-    elseif num ~= num then -- NaN
+    elseif not (num == num) then -- NaN
       return "\255\255\255\255"
     elseif num == math.huge then
       return "\0\0\128\127"
@@ -62,7 +62,7 @@ end
 local function decode_f32_le(s, offset)
   offset = offset or 1
   if jit and jit.status and require then
-    local ffi = require("ffi")
+dofile(minetest.get_modpath("moon") .. "/ffi.lua")
     local arr = ffi.new("float[1]")
     ffi.copy(arr, s:sub(offset, offset+3), 4)
     return tonumber(arr[0])
@@ -91,11 +91,11 @@ local function encode_meta(tbl)
 end
 
 local function decode_meta(s)
-  if type(s) ~= "string" or #s < 15 then
+  if not (type(s) == "string") or #s < 15 then
     return nil
   end
   local version = s:byte(1)
-  if version ~= SCHEMA_VERSION then
+  if not (version == SCHEMA_VERSION) then
     -- Future: migrate older version here if needed
     return nil
   end

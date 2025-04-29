@@ -81,7 +81,7 @@ local function update_voxel_tooltip()
 	local player = minetest.localplayer
 	if not player then return end
 	local pointed = minetest.get_pointed_thing()
-	if not pointed or pointed.type ~= "node" then
+	if not pointed or not (pointed.type == "node") then
 		if hud_id then
 			player:hud_remove(hud_id)
 			hud_id = nil
@@ -95,7 +95,7 @@ local function update_voxel_tooltip()
 			for _,vpos in ipairs(ov.voxels) do
 				if vpos.x == pos.x and vpos.y == pos.y and vpos.z == pos.z then
 					local tip = format_voxel_tooltip(pos, ov.data and ov.data[minetest.pos_to_string(pos)])
-					if tip ~= last_tip then
+					if not (tip == last_tip) then
 						if hud_id then player:hud_remove(hud_id) end
 						hud_id = player:hud_add({
 							hud_elem_type = "text",
@@ -182,9 +182,9 @@ minetest.register_entity("moon:debug_box", {
 
 -- Packet handler: receive overlay debug info from server
 minetest.register_on_modchannel_message(function(channel_name, sender, message)
-	if channel_name ~= "moon:debug_overlay" then return end
+	if not(channel_name == "moon:debug_overlay") then return end
 	local ok, chunk = pcall(minetest.parse_json, message)
-	if not ok or type(chunk) ~= "table" then return end
+	if not ok or not (type(chunk) == "table") then return end
 	-- chunk: { island_id, bbox={min={x=,y=,z=},max={x=,y=,z=}}, dirty, voxels={...}, data={pos_str->info} }
 	update_overlay(chunk.island_id, chunk.bbox, chunk.dirty, chunk.voxels, chunk.data)
 end)
@@ -209,3 +209,4 @@ minetest.register_globalstep(function(dtime)
 end)
 
 return debug_overlay
+

@@ -1,8 +1,8 @@
 -- ports/registry.lua
 -- Stores every port instance keyed by voxel position and holds current latch/state values
 
-local util = require("util")
-local types = require("ports/types")
+local util = dofile(minetest.get_modpath("moon") .. "/util.lua")
+local types = dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
 
 local registry = {}
 local port_id_counter = 0       -- 64-bit wrap-around

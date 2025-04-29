@@ -1,4 +1,4 @@
-local registry = require("ports.registry")
+dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
 
 local api = {}
 
@@ -12,7 +12,7 @@ function api.write(id, field, value)
     return false, "port not found"
   end
   local state = port.state
-  if state[field] ~= value then
+  if not (state[field] == value) then
     state[field] = value
     -- Mark hosting island dirty: external runtime/islands integration expected
     if change_callbacks[id] then

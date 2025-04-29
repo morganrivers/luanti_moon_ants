@@ -1,7 +1,7 @@
 -- tests/test_materials.lua
 -- Unit tests for material flag registration, density look-ups, reaction triggers
 
-local busted = require("busted")
+dofile(minetest.get_modpath("moon") .. "/busted.lua")
 local flags = dofile("materials/flags.lua")
 local registry = dofile("materials/registry.lua")
 local reactions = dofile("materials/reactions.lua")
@@ -15,8 +15,8 @@ describe("materials.flags", function()
     assert.is_number(flags.FLUID)
     assert.is_number(flags.REACTIVE)
     assert.is_number(flags.METAL)
-    assert.is_true((flags.METAL & flags.CONDUCTOR) ~= 0)
-    assert.is_true((flags.METAL & flags.STRUCTURAL) ~= 0)
+    assert.is_false(((flags.METAL and flags.CONDUCTOR) == 0))
+    assert.is_false(((flags.METAL and flags.STRUCTURAL) == 0))
   end)
 end)
 
@@ -32,9 +32,9 @@ describe("materials.registry", function()
     registry.add("Fe", {
       name = "Iron",
       flags = flags.METAL,
-      ["ρ"] = 1e-7,
-      ["ε_r"] = 1,
-      ["μ_r"] = 5000,
+      ["rho"] = 1e-7,
+      ["epsilon_r"] = 1,
+      ["mu_r"] = 5000,
       density = 7850,
       baseline_T = 290,
       reaction_id = 0,
@@ -49,10 +49,10 @@ describe("materials.registry", function()
 
   it("finds materials by flag", function()
     registry.add("Fe", {
-      name = "Iron", flags = flags.METAL, ["ρ"]=1e-7, ["ε_r"]=1, ["μ_r"]=5000, density=7850, baseline_T=290, reaction_id=0
+      name = "Iron", flags = flags.METAL, ["rho"]=1e-7, ["epsilon_r"]=1, ["mu_r"]=5000, density=7850, baseline_T=290, reaction_id=0
     })
     registry.add("Al2O3", {
-      name = "Alumina", flags = flags.INSULATOR | flags.STRUCTURAL, ["ρ"]=0, ["ε_r"]=9, ["μ_r"]=1, density=3970, baseline_T=290, reaction_id=0
+      name = "Alumina", flags = flags.INSULATOR or flags.STRUCTURAL, ["rho"]=0, ["epsilon_r"]=9, ["mu_r"]=1, density=3970, baseline_T=290, reaction_id=0
     })
     local found = registry.find_by_flag(flags.STRUCTURAL)
     assert.is_table(found)
@@ -85,13 +85,13 @@ describe("materials.reactions", function()
     local rx = {
       id = 1,
       react_flags = flags.REACTIVE,
-      product_flags = flags.CONDUCTOR | flags.STRUCTURAL,
+      product_flags = flags.CONDUCTOR or flags.STRUCTURAL,
       min_temp = 500,
       duration = 2.0,
       enthalpy = -100000,
     }
     local function check_reaction(voxel, temp, time)
-      if (voxel.flags & rx.react_flags) ~= 0 and temp >= rx.min_temp and time >= rx.duration then
+      if (not ((voxel.flags and rx.react_flags) == 0)) and temp >= rx.min_temp and time >= rx.duration then
         voxel.flags = rx.product_flags
         return true
       end
@@ -103,3 +103,4 @@ describe("materials.reactions", function()
     assert.equals(rx.product_flags, v.flags)
   end)
 end)
+

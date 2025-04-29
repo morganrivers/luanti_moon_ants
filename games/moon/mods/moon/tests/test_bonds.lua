@@ -1,5 +1,12 @@
 -- tests/test_bonds.lua
-local busted = require("busted")
+dofile(minetest.get_modpath("moon") .. "/busted.lua")
+
+-- Look for required things in
+package.path = "../?.lua;" .. package.path
+
+-- Set mymod global for API to write into
+_G.mymod = {} --_
+
 local util = dofile(minetest.get_modpath("moon").."/util.lua")
 local bond_types = dofile(minetest.get_modpath("moon").."/bonds/types.lua")
 local bond_registry = dofile(minetest.get_modpath("moon").."/bonds/registry.lua")
@@ -25,6 +32,8 @@ describe("Bond API", function()
   it("creates a RIGID bond and verifies symmetry", function()
     assert.is_nil(bond_api.get(posA, faceA))
     local ok, rec = bond_api.create(posA, faceA, posB, faceB, bond_types.RIGID)
+    print(ok)
+    print(rec)
     assert.is_true(ok)
     assert.are.equal(rec.type, bond_types.RIGID)
 

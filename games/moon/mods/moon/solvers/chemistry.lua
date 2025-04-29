@@ -1,13 +1,12 @@
-```lua
 -- solvers/chemistry.lua
-local constants    = require("constants")
-local util         = require("util")
-local materials    = require("materials/registry")
-local reactions    = require("materials/reactions")
-local voxels_meta  = require("voxels/metadata")
-local islands_det  = require("islands/detector")
+dofile(minetest.get_modpath("moon") .. "/constants.lua")
+dofile(minetest.get_modpath("moon") .. "/util.lua")
+dofile(minetest.get_modpath("moon") .. "/materials/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/materials/reactions.lua")
+dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
+dofile(minetest.get_modpath("moon") .. "/islands/detector.lua")
 
-local bit = bit32 or bit
+-- local bit = bit32 or bit DMR no idea what this was supposed to be
 
 local function step(island, dt)
   local dirty = false
@@ -37,7 +36,7 @@ local function step(island, dt)
         if meta.reaction_timer >= rxn.duration then
           -- Apply reaction: update flags and material_id
           local new_id = materials.find_by_flag(rxn.product_flags)[1]
-          if new_id and new_id ~= meta.material_id then
+          if new_id and not (new_id == meta.material_id) then
             meta.material_id = new_id
             meta.flags = rxn.product_flags
             meta.reaction_timer = nil
@@ -66,4 +65,3 @@ local function step(island, dt)
 end
 
 return { step = step }
-```

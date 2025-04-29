@@ -1,7 +1,7 @@
 -- tests/test_ports.lua
 -- Tests port read/write semantics, latch clearing, and callback execution
 
-local busted = require("busted.runner") -- Use Minetest's core.run_tests if not present
+-- dofile(minetest.get_modpath("moon") .. "/busted/runner.lua")
 local ports_types = dofile(minetest.get_modpath("moon").."/ports/types.lua")
 local ports_registry = dofile(minetest.get_modpath("moon").."/ports/registry.lua")
 local ports_api = dofile(minetest.get_modpath("moon").."/ports/api.lua")
@@ -118,3 +118,4 @@ describe("ports subsystem", function()
     assert.is_false(found)
   end)
 end)
+

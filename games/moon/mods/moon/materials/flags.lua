@@ -1,3 +1,6 @@
+#!/usr/bin/env luajit
+
+local bit = require("bit")   -- LuaJIT’s bit library
 MATERIAL = {}
 
 -- Bit-flag constants for base material roles
@@ -17,3 +20,4 @@ MATERIAL.POWDER     = bit.bor(MATERIAL.FLUID, MATERIAL.REACTIVE)
 MATERIAL.INERT_FLUID= bit.bor(MATERIAL.FLUID, MATERIAL.INSULATOR)
 
 -- return MATERIAL
+

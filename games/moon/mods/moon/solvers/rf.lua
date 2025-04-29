@@ -1,12 +1,11 @@
-```lua
 -- solvers/rf.lua
 -- Serializes and routes packets between RF_PORTs with range/line-of-sight and contention logic
 
-local constants   = require("constants")
-local util        = require("util")
-local ports       = require("ports")
-local ports_api   = require("ports.api")
-local ports_types = require("ports.types")
+dofile(minetest.get_modpath("moon") .. "/constants.lua")
+dofile(minetest.get_modpath("moon") .. "/util.lua")
+-- dofile(minetest.get_modpath("moon") .. "/ports.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
 
 -- RF solver constants
 local RF_PORT    = ports_types.RF_PORT
@@ -130,4 +129,3 @@ end
 return {
   step = step
 }
-```

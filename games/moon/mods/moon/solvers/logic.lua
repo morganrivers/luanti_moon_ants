@@ -1,16 +1,16 @@
 -- solvers/logic.lua
 -- Evaluates transistor/relay/diode behavior and updates digital port latches
 
-local constants = require("constants")
-local util = require("util")
-local materials = require("materials/registry")
-local ports_registry = require("ports/registry")
-local ports_types = require("ports/types")
-local ports_api = require("ports/api")
-local voxels_metadata = require("voxels/metadata")
+dofile(minetest.get_modpath("moon") .. "/constants.lua")
+dofile(minetest.get_modpath("moon") .. "/util.lua")
+dofile(minetest.get_modpath("moon") .. "/materials/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
+dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
 
 local PORT_CLASS = ports_types.classes
-local MATERIAL_FLAGS = require("materials/flags")
+dofile(minetest.get_modpath("moon") .. "/materials/flags.lua")
 
 -- Logic solver: step(island, dt)
 -- Returns true if any port/voxel state changed (for downstream solvers)
@@ -39,12 +39,12 @@ local function step(island, dt)
       if meta and util.has_flag(meta.flags, MATERIAL_FLAGS.TRANSISTOR) then
         -- For a transistor voxel:
         -- - Find gate port and its voltage
-        -- - Compare to material threshold (use ε_r as threshold placeholder)
+        -- - Compare to material threshold (use epsilon_r as threshold placeholder)
         -- - Set ACTUATOR port command if this is a coil
 
         -- Find the port attached to this voxel, if any
         local port_id = meta.port_id
-        if port_id and port_id ~= 0 then
+        if port_id and not (port_id == 0) then
           local port = ports_registry.lookup(port_id)
           if port and port.class == PORT_CLASS.ACTUATOR then
             -- Find gate port
@@ -74,12 +74,12 @@ local function step(island, dt)
             if found_gate then
               -- Get threshold from material
               local mat = materials.get(meta.material_id)
-              local threshold = mat and mat.ε_r or 1 -- Use ε_r as a stand-in for threshold voltage
+              local threshold = mat and mat.epsilon_r or 1 -- Use epsilon_r as a stand-in for threshold voltage
 
               -- If gate voltage > threshold, activate actuator
               local prev_command = port.state and port.state.command or nil
               local new_command = (gate_voltage > threshold) and 1 or 0
-              if prev_command ~= new_command then
+              if not (prev_command == new_command) then
                 ports_api.write(port_id, "command", new_command)
                 dirty = true
               end
@@ -89,7 +89,7 @@ local function step(island, dt)
       elseif meta and util.has_flag(meta.flags, MATERIAL_FLAGS.RELAY) then
         -- For a relay: similar logic, but controlling ACTUATOR based on POWER port current
         local port_id = meta.port_id
-        if port_id and port_id ~= 0 then
+        if port_id and not (port_id == 0) then
           local port = ports_registry.lookup(port_id)
           if port and port.class == PORT_CLASS.ACTUATOR then
             -- Find POWER port attached to this voxel
@@ -109,12 +109,12 @@ local function step(island, dt)
             end
 
             if found_coil then
-              -- Use ε_r as relay trigger current threshold (placeholder)
+              -- Use epsilon_r as relay trigger current threshold (placeholder)
               local mat = materials.get(meta.material_id)
-              local threshold = mat and mat.ε_r or 0.05
+              local threshold = mat and mat.epsilon_r or 0.05
               local prev_command = port.state and port.state.command or nil
               local new_command = (math.abs(coil_current) > threshold) and 1 or 0
-              if prev_command ~= new_command then
+              if not (prev_command == new_command) then
                 ports_api.write(port_id, "command", new_command)
                 dirty = true
               end
@@ -124,7 +124,7 @@ local function step(island, dt)
       elseif meta and util.has_flag(meta.flags, MATERIAL_FLAGS.DIODE) then
         -- For a diode: simply set ACTUATOR port command based on voltage polarity
         local port_id = meta.port_id
-        if port_id and port_id ~= 0 then
+        if port_id and not (port_id == 0) then
           local port = ports_registry.lookup(port_id)
           if port and port.class == PORT_CLASS.ACTUATOR then
             local v_a = 0
@@ -151,7 +151,7 @@ local function step(island, dt)
             if found == 2 then
               local prev_command = port.state and port.state.command or nil
               local new_command = (v_a > v_b) and 1 or 0
-              if prev_command ~= new_command then
+              if not (prev_command == new_command) then
                 ports_api.write(port_id, "command", new_command)
                 dirty = true
               end

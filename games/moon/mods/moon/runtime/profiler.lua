@@ -29,7 +29,7 @@ local function get_bucket(size)
   return #size_buckets
 end
 
--- profiler_data[solver][bucket] = {sum=total_us, n=samples, avg=μs}
+-- profiler_data[solver][bucket] = {sum=total_us, n=samples, avg=mus}
 local profiler_data = {}
 for _, solver in ipairs(solvers) do
   profiler_data[solver] = {}
@@ -108,12 +108,12 @@ local function bucket_label(i)
 end
 
 minetest.register_chatcommand("moon_profiler", {
-  description = "Show primitive-engine solver CPU usage (μs) by island size",
+  description = "Show primitive-engine solver CPU usage (mus) by island size",
   privs = {server=true},
   func = function(name)
     local stats = profiler.get_stats()
     local lines = {}
-    table.insert(lines, "Primitive Engine Solver Profiling (avg μs over last "..MAX_SAMPLES.." samples):")
+    table.insert(lines, "Primitive Engine Solver Profiling (avg mus over last "..MAX_SAMPLES.." samples):")
     local header = "Solver         "
     for i=1,#size_buckets do
       header = header .. ("| %8s "):format(bucket_label(i))
@@ -137,3 +137,4 @@ minetest.register_chatcommand("moon_profiler", {
 })
 
 return profiler
+

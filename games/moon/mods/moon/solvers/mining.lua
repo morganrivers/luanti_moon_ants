@@ -1,11 +1,10 @@
-```lua
-local constants    = require("constants")
-local util         = require("util")
-local materials    = require("materials.registry")
-local bonds        = require("bonds.registry")
-local ports        = require("ports.registry")
-local ports_api    = require("ports.api")
-local voxels_meta  = require("voxels.metadata")
+dofile(minetest.get_modpath("moon") .. "/constants.lua")
+dofile(minetest.get_modpath("moon") .. "/util.lua")
+dofile(minetest.get_modpath("moon") .. "/materials/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/bonds/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
+dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
 
 local mining = {}
 
@@ -84,4 +83,3 @@ function mining.step(island, dt)
 end
 
 return mining
-```

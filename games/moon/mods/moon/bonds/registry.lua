@@ -1,19 +1,33 @@
-local util = require("util")
-local types = require("bonds/types")
+dofile(minetest.get_modpath("moon") .. "/util.lua")
+local types = dofile(minetest.get_modpath("moon") .. "/bonds/types.lua")
 
-local registry = {}
+registry = {}
 
 -- Internal bond storage:
 -- Key: pos_hashA<<7|faceA  ..  pos_hashB<<7|faceB (smaller first for symmetry)
 local bond_map = {}
 
--- Helper: canonicalize (pos_hashA, faceA, pos_hashB, faceB) to symmetric key
+-- -- Helper: canonicalize (pos_hashA, faceA, pos_hashB, faceB) to symmetric key
+-- local function make_bond_key(pos_hashA, faceA, pos_hashB, faceB)
+--   print("pos_hashA")
+--   print("faceA")
+--   print(pos_hashA)
+--   print(faceA)
+--   -- guarantee (smaller,face),(larger,face) order for symmetry
+--   if pos_hashA < pos_hashB or (pos_hashA == pos_hashB and faceA <= faceB) then
+--     return string.pack(">I4B1I4B1", pos_hashA, faceA, pos_hashB, faceB)
+--   else
+--     return string.pack(">I4B1I4B1", pos_hashB, faceB, pos_hashA, faceA)
+--   end
+-- end
+
 local function make_bond_key(pos_hashA, faceA, pos_hashB, faceB)
-  -- guarantee (smaller,face),(larger,face) order for symmetry
+  print("make_bond_key", pos_hashA, faceA, pos_hashB, faceB)
+
   if pos_hashA < pos_hashB or (pos_hashA == pos_hashB and faceA <= faceB) then
-    return string.pack(">I4B1I4B1", pos_hashA, faceA, pos_hashB, faceB)
+    return ("%08x_%d_%08x_%d"):format(pos_hashA, faceA, pos_hashB, faceB)
   else
-    return string.pack(">I4B1I4B1", pos_hashB, faceB, pos_hashA, faceA)
+    return ("%08x_%d_%08x_%d"):format(pos_hashB, faceB, pos_hashA, faceA)
   end
 end
 
@@ -65,3 +79,4 @@ function registry.pairs()
 end
 
 return registry
+

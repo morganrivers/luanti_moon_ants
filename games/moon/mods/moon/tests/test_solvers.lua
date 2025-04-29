@@ -1,36 +1,36 @@
-local busted = require("busted")
-local assert = busted.assert
+dofile(minetest.get_modpath("moon") .. "/busted.lua")
+--local assert = busted.assert
 
 -- Mock/require subsystems
-local constants = require("constants")
-local util = require("util")
+dofile(minetest.get_modpath("moon") .. "/constants.lua")
+dofile(minetest.get_modpath("moon") .. "/util.lua")
 
-local materials_flags = require("materials.flags")
-local materials_registry = require("materials.registry")
-local materials_reactions = require("materials.reactions")
+dofile(minetest.get_modpath("moon") .. "/materials/flags.lua")
+dofile(minetest.get_modpath("moon") .. "/materials/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/materials/reactions.lua")
 
-local bonds_types = require("bonds.types")
-local bonds_registry = require("bonds.registry")
-local bonds_api = require("bonds.api")
+dofile(minetest.get_modpath("moon") .. "/bonds/types.lua")
+dofile(minetest.get_modpath("moon") .. "/bonds/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/bonds/api.lua")
 
-local ports_types = require("ports.types")
-local ports_registry = require("ports.registry")
-local ports_api = require("ports.api")
+dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
+dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
 
-local voxels_metadata = require("voxels.metadata")
-local voxels_serialization = require("voxels.serialization")
+dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
+dofile(minetest.get_modpath("moon") .. "/voxels/serialization.lua")
 
-local islands_detector = require("islands.detector")
-local islands_queue = require("islands.queue")
+dofile(minetest.get_modpath("moon") .. "/islands/detector.lua")
+dofile(minetest.get_modpath("moon") .. "/islands/queue.lua")
 
-local electrical = require("solvers.electrical")
-local logic = require("solvers.logic")
-local mechanical = require("solvers.mechanical")
-local thermal = require("solvers.thermal")
-local chemistry = require("solvers.chemistry")
-local material_flow = require("solvers.material_flow")
-local rf = require("solvers.rf")
-local mining = require("solvers.mining")
+dofile(minetest.get_modpath("moon") .. "/solvers/electrical.lua")
+dofile(minetest.get_modpath("moon") .. "/solvers/logic.lua")
+dofile(minetest.get_modpath("moon") .. "/solvers/mechanical.lua")
+dofile(minetest.get_modpath("moon") .. "/solvers/thermal.lua")
+dofile(minetest.get_modpath("moon") .. "/solvers/chemistry.lua")
+dofile(minetest.get_modpath("moon") .. "/solvers/material_flow.lua")
+dofile(minetest.get_modpath("moon") .. "/solvers/rf.lua")
+dofile(minetest.get_modpath("moon") .. "/solvers/mining.lua")
 
 -- Mocked map and registries
 local test_world = {}
@@ -143,9 +143,9 @@ describe("Primitive engine solvers", function()
 
   it("RC circuit: 3 nodes, 5V source, resistor, capacitor", function()
     -- Material definitions
-    materials_registry.add("Cu",   {name="Copper", flags=materials_flags.CONDUCTOR, ρ=1.68e-8, ε_r=1, μ_r=1, density=8960, baseline_T=293, reaction_id=0})
-    materials_registry.add("C",    {name="Carbon", flags=materials_flags.CONDUCTOR, ρ=1e2,     ε_r=1, μ_r=1, density=2267, baseline_T=293, reaction_id=0})
-    materials_registry.add("Vac",  {name="Vacuum", flags=0,                          ρ=1e20,    ε_r=1, μ_r=1, density=1,    baseline_T=293, reaction_id=0})
+    materials_registry.add("Cu",   {name="Copper", flags=materials_flags.CONDUCTOR, rho=1.68e-8, epsilon_r=1, mu_r=1, density=8960, baseline_T=293, reaction_id=0})
+    materials_registry.add("C",    {name="Carbon", flags=materials_flags.CONDUCTOR, rho=1e2,     epsilon_r=1, mu_r=1, density=2267, baseline_T=293, reaction_id=0})
+    materials_registry.add("Vac",  {name="Vacuum", flags=0,                          rho=1e20,    epsilon_r=1, mu_r=1, density=1,    baseline_T=293, reaction_id=0})
 
     -- Positions
     local P_SRC = {x=0, y=0, z=0}
@@ -193,7 +193,7 @@ describe("Primitive engine solvers", function()
 
   it("Mechanical: 2 shafts with 4:1 ratio propagate rpm", function()
     -- Material
-    materials_registry.add("Steel", {name="Steel", flags=materials_flags.STRUCTURAL, ρ=1, ε_r=1, μ_r=1, density=7850, baseline_T=293, reaction_id=0})
+    materials_registry.add("Steel", {name="Steel", flags=materials_flags.STRUCTURAL, rho=1, epsilon_r=1, mu_r=1, density=7850, baseline_T=293, reaction_id=0})
     -- Positions
     local P_A = {x=0, y=0, z=0}
     local P_B = {x=1, y=0, z=0}
@@ -221,7 +221,7 @@ describe("Primitive engine solvers", function()
 
   it("Thermal: 3-voxel conduction chain reaches steady state", function()
     -- Material
-    materials_registry.add("Cu", {name="Copper", flags=materials_flags.CONDUCTOR, ρ=1, ε_r=1, μ_r=1, density=8960, baseline_T=293, reaction_id=0})
+    materials_registry.add("Cu", {name="Copper", flags=materials_flags.CONDUCTOR, rho=1, epsilon_r=1, mu_r=1, density=8960, baseline_T=293, reaction_id=0})
     -- Positions
     local P_A = {x=0, y=0, z=0}
     local P_B = {x=1, y=0, z=0}
@@ -256,7 +256,7 @@ describe("Primitive engine solvers", function()
     -- Material: REACTIVE at first, CONDUCTOR after
     local F_REACTIVE = materials_flags.REACTIVE
     local F_CONDUCTOR = materials_flags.CONDUCTOR
-    materials_registry.add("Dummy", {name="Dummy", flags=F_REACTIVE, ρ=1, ε_r=1, μ_r=1, density=1, baseline_T=300, reaction_id=1})
+    materials_registry.add("Dummy", {name="Dummy", flags=F_REACTIVE, rho=1, epsilon_r=1, mu_r=1, density=1, baseline_T=300, reaction_id=1})
     -- Register reaction: needs REACTIVE, min_temp=400, duration=0.1s, becomes CONDUCTOR
     materials_reactions[1] = {
       id = 1,
@@ -282,3 +282,4 @@ describe("Primitive engine solvers", function()
     assert.is_true(v.flags == F_CONDUCTOR)
   end)
 end)
+
