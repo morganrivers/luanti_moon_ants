@@ -1,14 +1,15 @@
 -- materials/registry.lua
 dofile(minetest.get_modpath("moon") .. "/materials/flags.lua")
+local bit = require("bit")  -- LuaJIT's bit library
 
 local registry = {}
 local _by_flag = {}
 
 -- Internal helper to update flag index
 local function _index_by_flag(id, mat)
-  for bit = 0, 7 do
-    local flag = bit32.lshift(1, bit)
-    if not (bit32.band(mat.flags, flag) == 0) then
+  for b = 0, 7 do
+    local flag = bit.lshift(1, b)
+    if not (bit.band(mat.flags, flag) == 0) then
       _by_flag[flag] = _by_flag[flag] or {}
       _by_flag[flag][id] = true
     end
@@ -57,7 +58,7 @@ end
 function api.find_by_flag(flag_mask)
   local result = {}
   for id, def in pairs(registry) do
-    if bit32.band(def.flags, flag_mask) == flag_mask then
+    if bit.band(def.flags, flag_mask) == flag_mask then
       result[id] = def
     end
   end
