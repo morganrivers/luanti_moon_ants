@@ -110,17 +110,17 @@ end
 
 -- Returns true if the given mask bit is set in word (word, flag_bit)
 function util.has_flag(word, flag_bit)
-  return word * flag_bit -- = 0 -- DMR changed from   return (word & flag_bit) ~= 0
+  return bit.band(word, flag_bit) ~= 0 --not (word and flag_bit == 0) -- = 0 -- DMR changed from   return (word & flag_bit) ~= 0
 end
 
 -- Sets a flag bit in word (returns new word)
 function util.set_flag(word, flag_bit)
-  return word or flag_bit
+  return bit.bor(word, flag_bit)
 end
 
 -- Clears a flag bit in word (returns new word)
 function util.clear_flag(word, flag_bit)
-  return word and (not flag_bit)
+  return bit.band(word, (not flag_bit))
 end
 
 -- ================================
@@ -152,13 +152,28 @@ function util.make_pool(new_fn)
   return pool
 end
 
--- ======================================
--- Coordinate hash (x,y,z → 32-bit int)
--- ======================================
+-------------------------------------------------
+-- util.lua  (add **below** the PRIME constants)
+-------------------------------------------------
 local PRIME1, PRIME2, PRIME3 = 73856093, 19349663, 83492791
+
+-- ------------------------------------------------------------------
+-- Hash  ➜ 32-bit  +  reverse lookup table so we can un-hash later
+-- ------------------------------------------------------------------
+local _reverse_hash = {}         -- weak-valued keeps memory use low
+setmetatable(_reverse_hash, { __mode = "v" })
+
+--- forward hash (unchanged, but remember the position we saw)
 function util.hash(pos)
   local h = (pos.x * PRIME1 + pos.y * PRIME2 + pos.z * PRIME3) % 0x100000000
+  _reverse_hash[h] = { x = pos.x, y = pos.y, z = pos.z } -- store *copy*
   return h
+end
+
+--- **new** – turn the 32-bit key back into a {x,y,z} table.
+--     · Returns *nil* if we never saw that hash before.
+function util.unhash3(h)
+  return _reverse_hash[h]
 end
 
 

@@ -8,7 +8,7 @@ local api = {}
 
 -- Helper: checks if two faces are opposite (0-5: +X,-X,+Y,-Y,+Z,-Z)
 local function faces_are_opposite(faceA, faceB)
-  return (math.floor(faceA / 2) == math.floor(faceB / 2)) and not ((faceA % 2) == (faceB % 2))
+  return (math.floor(faceA / 2) == math.floor(faceB / 2)) and ((faceA % 2) ~= (faceB % 2))
 end
 
 -- Helper: checks if two positions are adjacent along a given face direction
@@ -87,6 +87,7 @@ function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
   end
   local kA, fA, kB, fB = make_canonical_key(posA, faceA, posB, faceB)
   if registry.get(posA, faceA) or registry.get(posB, faceB) then
+--  if api.get(posA, faceA) or api.get(posB, faceB) then
     return false, "Bond already exists"
   end
   if not types.fields[bond_type] then
@@ -109,7 +110,7 @@ function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
     posB_hash = util.hash(posB),
     faceB = faceB,
   }
-  registry.set(record.posB_hash, record.faceA, record.posA_hash, record.faceB, record.bond_record)
+  registry.set(record.posA_hash, record.faceA, record.posB_hash, record.faceB, record)
   -- registry.insert(kA, fA, kB, fB, record)
   return true, record
 end
@@ -117,10 +118,9 @@ end
 
 -- Breaks (removes) the bond at posA,faceA (and its dual)
 function api.break_bond(posA, faceA)
-  local record = registry.get(posA, faceA)
+  local record = registry.get(util.hash(posA), faceA)
   if not record then return false end
-  registry.remove(posA, faceA)
-  registry.remove({x=record.posB_hash}, record.faceB) -- registry.remove is safe to call on non-existent
+  registry.delete(record.posA_hash, record.faceA, record.posB_hash, record.faceB)
   return true
 end
 
@@ -135,7 +135,7 @@ end
 
 -- Expose: get bond record at a voxel-face
 function api.get(pos, face)
-  return registry.get(pos, face)
+  return registry.get(util.hash(pos), face)
 end
 
 -- Expose: iterate all bonds touching a voxel

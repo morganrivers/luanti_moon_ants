@@ -9,7 +9,7 @@ local _by_flag = {}
 local function _index_by_flag(id, mat)
   for b = 0, 7 do
     local flag = bit.lshift(1, b)
-    if not (bit.band(mat.flags, flag) == 0) then
+    if (bit.band(mat.flags, flag) ~= 0) then
       _by_flag[flag] = _by_flag[flag] or {}
       _by_flag[flag][id] = true
     end

@@ -48,7 +48,16 @@ function registry.get(pos_hashA, faceA)
   -- This may match any bond sharing this voxel+face
   -- Iterate all bonds and return the first where this end matches
   for k, v in pairs(bond_map) do
-    local a, fa, b, fb = string.unpack(">I4B1I4B1", k)
+    local parts = {}
+    for part in k:gmatch("[^_]+") do
+      table.insert(parts, part)
+    end
+    
+    local a = tonumber(parts[1], 16)
+    local fa = tonumber(parts[2])
+    local b = tonumber(parts[3], 16)
+    local fb = tonumber(parts[4])
+    
     if (a == pos_hashA and fa == faceA) or (b == pos_hashA and fb == faceA) then
       return v
     end
@@ -63,7 +72,15 @@ function registry.pairs_for_voxel(pos_hash)
     while true do
       local k, v = iter(state, key)
       if not k then return nil end
-      local a, fa, b, fb = string.unpack(">I4B1I4B1", k)
+      
+      local parts = {}
+      for part in k:gmatch("[^_]+") do
+        table.insert(parts, part)
+      end
+      
+      local a = tonumber(parts[1], 16)
+      local b = tonumber(parts[3], 16)
+      
       if a == pos_hash or b == pos_hash then
         return k, v
       end

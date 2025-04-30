@@ -1,11 +1,12 @@
 -- solvers/mechanical.lua
-dofile(minetest.get_modpath("moon") .. "/constants.lua")
-dofile(minetest.get_modpath("moon") .. "/util.lua")
-dofile(minetest.get_modpath("moon") .. "/bonds/registry.lua")
-dofile(minetest.get_modpath("moon") .. "/bonds/types.lua")
-dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
-dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
-dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
+local constants = dofile(minetest.get_modpath("moon") .. "/constants.lua")
+local util = dofile(minetest.get_modpath("moon") .. "/util.lua")
+local bonds_registry = dofile(minetest.get_modpath("moon") .. "/bonds/registry.lua")
+local bonds_types = dofile(minetest.get_modpath("moon") .. "/bonds/types.lua")
+local ports_registry = dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
+local types = dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
+local ports_api = dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
+local voxels_metadata = dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
 
 -- Caches to minimize table churn
 local tmp_chain       = {}
@@ -45,8 +46,8 @@ local function collect_shaft_chains(island)
           tmp_visited[pos_hash] = true
           chain[#chain+1] = {pos_hash=pos_hash, incoming_bond=in_bond}
           chain_set[pos_hash] = true
-          for bond_rec in bonds.pairs_for_voxel(pos_hash) do
-            if bond_rec.type == bond_types.SHAFT then
+          for bond_rec in bonds_registry.pairs_for_voxel(pos_hash) do
+            if bond_rec.type == bonds_types.SHAFT then
               local nbr_hash = (bond_rec.a.pos_hash == pos_hash) and bond_rec.b.pos_hash or bond_rec.a.pos_hash
               if not chain_set[nbr_hash] then
                 tmp_bond_stack[#tmp_bond_stack+1] = {nbr_hash, bond_rec}
@@ -70,8 +71,8 @@ local function propagate_shaft_rpm(chain, island)
   -- First, find if any ACTUATOR port is attached to a voxel in this chain
   for _, entry in ipairs(chain) do
     local vx_hash = entry.pos_hash
-    for _, port in ipairs(ports.ports_for_voxel(vx_hash) or {}) do
-      if port.class == ports.types.ACTUATOR then
+    for _, port in ipairs(ports_registry.ports_for_voxel(vx_hash) or {}) do
+      if port.class == types.ACTUATOR then
         local cmd = port.state.command or 0
         rpm = cmd -- command directly sets target rpm (no inertia)
         break
@@ -85,7 +86,7 @@ local function propagate_shaft_rpm(chain, island)
   end
   -- Now walk the chain, propagate rpm and set each SHAFT bond state
   for _, entry in ipairs(chain) do
-    if entry.incoming_bond and entry.incoming_bond.type == bond_types.SHAFT then
+    if entry.incoming_bond and entry.incoming_bond.type == bonds_types.SHAFT then
       local ratio = entry.incoming_bond.ratio or 1
       rpm = rpm * ratio
       if not (entry.incoming_bond.omega_rpm == rpm) then
@@ -95,7 +96,7 @@ local function propagate_shaft_rpm(chain, island)
     end
     -- For all SHAFT bonds attached to this voxel, set their omega_rpm
     for bond_rec in bonds.pairs_for_voxel(entry.pos_hash) do
-      if bond_rec.type == bond_types.SHAFT then
+      if bond_rec.type == bonds_types.SHAFT then
         if not (bond_rec.omega_rpm == rpm) then
           bond_rec.omega_rpm = rpm
           changed = true
@@ -110,12 +111,12 @@ end
 local function propagate_hinge_slider(island)
   local changed = false
   for vx_hash in pairs(island.voxels) do
-    for bond_rec in bonds.pairs_for_voxel(vx_hash) do
-      if bond_rec.type == bond_types.HINGE then
+    for bond_rec in bonds_registry.pairs_for_voxel(vx_hash) do
+      if bond_rec.type == bonds_types.HINGE then
         -- Find attached SHAFT rpm (search both ends)
         local rpm = 0
-        for shaft_bond in bonds.pairs_for_voxel(vx_hash) do
-          if shaft_bond.type == bond_types.SHAFT then
+        for shaft_bond in bonds_registry.pairs_for_voxel(vx_hash) do
+          if shaft_bond.type == bonds_types.SHAFT then
             rpm = shaft_bond.omega_rpm or 0
             break
           end
@@ -127,11 +128,11 @@ local function propagate_hinge_slider(island)
           bond_rec.theta_deg = theta
           changed = true
         end
-      elseif bond_rec.type == bond_types.SLIDER then
+      elseif bond_rec.type == bonds_types.SLIDER then
         -- Find attached SHAFT rpm
         local rpm = 0
-        for shaft_bond in bonds.pairs_for_voxel(vx_hash) do
-          if shaft_bond.type == bond_types.SHAFT then
+        for shaft_bond in bonds_registry.pairs_for_voxel(vx_hash) do
+          if shaft_bond.type == bonds_types.SHAFT then
             rpm = shaft_bond.omega_rpm or 0
             break
           end
@@ -153,14 +154,14 @@ local function update_voxel_pose(island)
   local changed = false
   for vx_hash in pairs(island.voxels) do
     local pos = util.unhash3(vx_hash)
-    local vmeta = voxels.read(pos)
+    local vmeta = voxels_metadata.read(pos)
     if vmeta and util.has_flag(vmeta.flags, constants.MECHANICAL_POSE) then
       -- For demo: set facedir based on SHAFT rpm or HINGE theta
       local yaw = 0
-      for bond_rec in bonds.pairs_for_voxel(vx_hash) do
-        if bond_rec.type == bond_types.HINGE then
+      for bond_rec in bonds_registry.pairs_for_voxel(vx_hash) do
+        if bond_rec.type == bonds_types.HINGE then
           yaw = bond_rec.theta_deg or 0
-        elseif bond_rec.type == bond_types.SHAFT then
+        elseif bond_rec.type == bonds_types.SHAFT then
           yaw = (bond_rec.omega_rpm or 0) * 6 % 360
         end
       end
@@ -169,7 +170,7 @@ local function update_voxel_pose(island)
       -- Write back (placeholder: actual node update omitted)
       if not (vmeta.facedir == facedir) then
         vmeta.facedir = facedir
-        voxels.write(pos, vmeta)
+        voxels_metadata.write(pos, vmeta)
         changed = true
       end
     end
@@ -181,8 +182,9 @@ end
 local function detect_contact_events(island)
   local triggered = false
   -- For each port with MINE_TOOL class, check front neighbor
-  for _, port in pairs(island.ports) do
-    if port.class == ports.types.MINE_TOOL and (port.state.torque or 0) > 0 then
+  for _, port_id in ipairs(island.ports) do
+    local port = ports_registry.lookup(port_id)
+    if port and port.class == types.MINE_TOOL and (port.state.torque or 0) > 0 then
       local pos = util.unhash3(port.pos_hash)
       local dir = util.face_to_dir(port.face)
       local target = {x=pos.x+dir.x, y=pos.y+dir.y, z=pos.z+dir.z}

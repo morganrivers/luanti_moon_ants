@@ -1,14 +1,15 @@
 -- solvers/electrical.lua
 -- Kirchhoff node solver producing voltages/currents for each ELECTRIC bond graph
 
-dofile(minetest.get_modpath("moon") .. "/constants.lua")
-dofile(minetest.get_modpath("moon") .. "/util.lua")
-dofile(minetest.get_modpath("moon") .. "/materials/registry.lua")
-dofile(minetest.get_modpath("moon") .. "/bonds/types.lua")
-dofile(minetest.get_modpath("moon") .. "/bonds/registry.lua")
-dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
-dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
-dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
+local constants = dofile(minetest.get_modpath("moon") .. "/constants.lua")
+local util = dofile(minetest.get_modpath("moon") .. "/util.lua")
+local materials_registry = dofile(minetest.get_modpath("moon") .. "/materials/registry.lua")
+local materials_flags = dofile(minetest.get_modpath("moon") .. "/materials/flags.lua")
+local bonds_types = dofile(minetest.get_modpath("moon") .. "/bonds/types.lua")
+local bonds_registry = dofile(minetest.get_modpath("moon") .. "/bonds/registry.lua")
+local types = dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
+local ports_api = dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
+local voxels_metadata = dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
 
 local MAX_ITERS      = constants.MAX_SOLVER_ITERS or 128
 local VOLTAGE_EPS    = 1e-5
@@ -32,11 +33,16 @@ local function build_circuit_graph(island)
   local node_id = 0
   -- Map pos_hash to node_id and populate node_list
   for pos_hash in pairs(island.voxels) do
-    local voxel = island.voxels[pos_hash]
-    local meta = voxels_meta.read(voxel.pos)
+    local pos = util.unhash3(pos_hash)
+    local meta = voxels_metadata.read(pos)
+    -- Skip if no metadata
+    if not meta then
+      -- Skip if no metadata
+      return
+    end
     -- Only consider voxels with CONDUCTOR flag
-    local mat = materials.get(meta.material_id)
-    if mat and util.has_flag(mat.flags, materials.flags.CONDUCTOR) then
+    local mat = materials_registry.get(meta.material_id or "")
+    if mat and util.has_flag(mat.flags, materials_flags.CONDUCTOR) then
       node_id = node_id + 1
       node_map[pos_hash] = node_id
       -- Check for port
@@ -45,7 +51,7 @@ local function build_circuit_graph(island)
       node_list[node_id] = {
         pos_hash = pos_hash,
         port_id = port_id,
-        is_port = (not (port_id == 0) and port == types.POWER) or false,
+        is_port = ((port_id ~= 0) and port == types.POWER) or false,
         G = 0,
         I = 0,
         V = 0,
@@ -64,10 +70,12 @@ local function build_circuit_graph(island)
         local nodeA, nodeB = node_map[hashA], node_map[hashB]
         if nodeA and nodeB and nodeA < nodeB then
           -- Resistance from materials, fallback to small R if missing
-          local metaA = voxels_meta.read(bond.pos_A)
-          local matA  = materials.get(metaA.material_id)
-          local metaB = voxels_meta.read(bond.pos_B)
-          local matB  = materials.get(metaB.material_id)
+          local posA = util.unhash3(hashA)
+          local posB = util.unhash3(hashB)
+          local metaA = voxels_metadata.read(posA)
+          local matA  = materials_registry.get(metaA.material_id)
+          local metaB = voxels_metadata.read(posB)
+          local matB  = materials_registry.get(metaB.material_id)
           local rhoA  = (matA and matA.rho) or 1.0
           local rhoB  = (matB and matB.rho) or 1.0
           local R     = (rhoA + rhoB) * constants.VOXEL_EDGE_LEN / 2
@@ -81,15 +89,15 @@ end
 local function apply_port_currents()
   -- Set up current injections and voltage constraints from POWER ports
   for node_id, node in pairs(node_list) do
-    if node.is_port and not (node.port_id == 0) then
+    if node.is_port and (node.port_id ~= 0) then
       -- Ports may act as voltage source (V), or current source (I), or sink (load)
       local V_set = ports_api.read(node.port_id, "voltage")
       local I_set = ports_api.read(node.port_id, "current_A")
-      if not (V_set == nil) then
+      if (V_set ~= nil) then
         node.V = V_set
         node.G = 1e9  -- Pin voltage: acts as ideal voltage source (large conductance)
         node.I = 0
-      elseif not (I_set == nil) then 
+      elseif (I_set ~= nil) then 
         node.I = I_set
         node.G = 0
       end
@@ -149,7 +157,7 @@ end
 local function write_results_to_ports()
   local changed = false
   for node_id, node in pairs(node_list) do
-    if node.is_port and not (node.port_id == 0) then
+    if node.is_port and (node.port_id ~= 0) then
       -- Write computed voltage back to port state
       local oldV = ports_api.read(node.port_id, "voltage")
       if math.abs((oldV or 0) - node.V) > VOLTAGE_EPS then

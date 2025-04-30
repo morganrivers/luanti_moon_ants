@@ -42,8 +42,12 @@ describe("ports subsystem", function()
     local id1 = ports_registry.add(pos_hash, 0, types.SENSOR, { value = 1.0 })
     local id2 = ports_registry.add(pos_hash, 2, types.ACTUATOR, { command = 0.5 })
     local ids = {}
-    for _, rec in ipairs(ports_registry.ports_for_voxel(pos_hash)) do
+    local iterator = ports_registry.ports_for_voxel(pos_hash)
+    local id = iterator() 
+    while id do
+      local rec = ports_registry.lookup(id)
       table.insert(ids, rec.id)
+      id = iterator()
     end
     table.sort(ids)
     assert.are.same({math.min(id1, id2), math.max(id1, id2)}, ids)
@@ -112,8 +116,11 @@ describe("ports subsystem", function()
     assert.is_nil(ports_registry.lookup(id))
     -- Also check it's not found in ports_for_voxel
     local found = false
-    for _, rec in ipairs(ports_registry.ports_for_voxel(pos_hash)) do
-      if rec.id == id then found = true end
+    local iterator = ports_registry.ports_for_voxel(pos_hash)
+    local port_id = iterator()
+    while port_id do
+      if port_id == id then found = true end
+      port_id = iterator()
     end
     assert.is_false(found)
   end)

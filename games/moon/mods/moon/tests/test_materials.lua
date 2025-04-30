@@ -52,7 +52,7 @@ describe("materials.registry", function()
       name = "Iron", flags = flags.METAL, ["rho"]=1e-7, ["epsilon_r"]=1, ["mu_r"]=5000, density=7850, baseline_T=290, reaction_id=0
     })
     registry.add("Al2O3", {
-      name = "Alumina", flags = flags.INSULATOR or flags.STRUCTURAL, ["rho"]=0, ["epsilon_r"]=9, ["mu_r"]=1, density=3970, baseline_T=290, reaction_id=0
+      name = "Alumina", flags = bit.bor(flags.INSULATOR, flags.STRUCTURAL), ["rho"]=0, ["epsilon_r"]=9, ["mu_r"]=1, density=3970, baseline_T=290, reaction_id=0
     })
     local found = registry.find_by_flag(flags.STRUCTURAL)
     assert.is_table(found)
@@ -85,7 +85,7 @@ describe("materials.reactions", function()
     local rx = {
       id = 1,
       react_flags = flags.REACTIVE,
-      product_flags = flags.CONDUCTOR or flags.STRUCTURAL,
+      product_flags = bit.bor(flags.CONDUCTOR, flags.STRUCTURAL),
       min_temp = 500,
       duration = 2.0,
       enthalpy = -100000,
