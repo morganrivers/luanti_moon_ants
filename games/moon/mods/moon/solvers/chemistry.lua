@@ -1,4 +1,5 @@
-local bit = require("bit")   -- LuaJIT’s bit library
+ -- require("bit")   -- LuaJIT’s bit library
+local bit = dofile(minetest.get_modpath("moon") .. "/lib/bit.lua")
 
 -- solvers/chemistry.lua
 local constants = dofile(minetest.get_modpath("moon") .. "/constants.lua")

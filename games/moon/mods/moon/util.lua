@@ -1,5 +1,6 @@
 -- util.lua
 -- Pure helper functions (vector math, object pools, bit ops) with zero dependencies on domain logic
+local bit = dofile(minetest.get_modpath("moon") .. "/lib/bit.lua")
 
 util = {}
 

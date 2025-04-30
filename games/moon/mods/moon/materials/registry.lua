@@ -1,6 +1,6 @@
 -- materials/registry.lua
 dofile(minetest.get_modpath("moon") .. "/materials/flags.lua")
-local bit = require("bit")  -- LuaJIT's bit library
+local bit = dofile(minetest.get_modpath("moon") .. "/lib/bit.lua")
 
 local registry = {}
 local _by_flag = {}

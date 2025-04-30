@@ -1,6 +1,23 @@
 #!/usr/bin/env luajit
+-- local ie = minetest.request_insecure_environment()
+-- local bit = minetest.request_bit()
 
-local bit = require("bit")   -- LuaJIT’s bit library
+-- mods/moon/lib/bit.lua  (pure Lua, no C side)
+
+-- return bit
+
+-- flags.lua (top of file)
+-- local ie = minetest.request_insecure_environment()
+-- if not ie then
+--     error("[moon] Please add this mod to secure.trusted_mods so we can load 'bit'")
+-- end
+
+-- local bit = ie.require("bit")  -- LuaJIT bit-ops library
+local bit = dofile(minetest.get_modpath("moon") .. "/lib/bit.lua")
+
+
+
+-- LOCAL bit = require("bit")   -- LuaJIT’s bit library
 MATERIAL = {}
 
 -- Bit-flag constants for base material roles
