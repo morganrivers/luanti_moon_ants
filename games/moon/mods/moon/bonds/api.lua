@@ -163,7 +163,11 @@ end
 
 -- Expose: iterate all bonds touching a voxel
 function api.pairs_for_voxel(pos)
-  return registry.pairs_for_voxel(util.hash(pos))
+  if type(pos) == "number" then
+    return registry.pairs_for_voxel(pos) -- Already a hash
+  else
+    return registry.pairs_for_voxel(util.hash(pos))
+  end
 end
 
 return api

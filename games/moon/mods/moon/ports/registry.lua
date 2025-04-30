@@ -82,13 +82,15 @@ end
 -- Get all port_ids for a given pos_hash
 function registry.ports_for_voxel(pos_hash)
   local by_face = ports_by_voxel[pos_hash]
-  if not by_face then return function() end end
+  if not by_face then
+    return function() end            -- empty iterator
+  end
   local face_iter, state, var = pairs(by_face)
   return function()
     local face, id = face_iter(state, var)
-    var = face
-    return id
-  end
+    var = face                       -- advance cursor
+    return id                        -- just one value!
+  end, nil, nil
 end
 
 -- For debug or save: full port table

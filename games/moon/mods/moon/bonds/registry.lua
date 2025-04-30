@@ -81,27 +81,29 @@ end
 
 -- Iterate all bonds attached to a voxel
 function registry.pairs_for_voxel(pos_hash)
-  local iter, state, var = pairs(bond_map)
-  local function next_bond(_, key)
-    while true do
-      local k, v = iter(state, key)
-      if not k then return nil end
-      
-      local parts = {}
-      for part in k:gmatch("[^_]+") do
-        table.insert(parts, part)
-      end
-      
-      local a = tonumber(parts[1], 16)
-      local b = tonumber(parts[3], 16)
-      
-      if a == pos_hash or b == pos_hash then
-        return k, v
-      end
-      key = k
+  local result = {}
+  for k, rec in pairs(bond_map) do
+    local parts = {}
+    for part in k:gmatch("[^_]+") do
+      table.insert(parts, part)
+    end
+    
+    local a = tonumber(parts[1], 16)
+    local b = tonumber(parts[3], 16)
+    
+    if a == pos_hash or b == pos_hash then
+      table.insert(result, rec)
     end
   end
-  return next_bond, nil, nil
+  
+  local i = 0
+  return function()
+    i = i + 1
+    local rec = result[i]
+    if rec then
+      return i, rec
+    end
+  end
 end
 
 -- For debugging: iterate all bonds

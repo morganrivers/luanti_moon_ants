@@ -71,8 +71,9 @@ local function propagate_shaft_rpm(chain, island)
   -- First, find if any ACTUATOR port is attached to a voxel in this chain
   for _, entry in ipairs(chain) do
     local vx_hash = entry.pos_hash
-    for _, port in ipairs(ports_registry.ports_for_voxel(vx_hash) or {}) do
-      if port.class == types.ACTUATOR then
+    for id in ports_registry.ports_for_voxel(vx_hash) do
+      local port = ports_registry.lookup(id)
+      if port and port.class == types.ACTUATOR then
         local cmd = port.state.command or 0
         rpm = cmd -- command directly sets target rpm (no inertia)
         break
@@ -95,7 +96,7 @@ local function propagate_shaft_rpm(chain, island)
       end
     end
     -- For all SHAFT bonds attached to this voxel, set their omega_rpm
-    for bond_rec in bonds.pairs_for_voxel(entry.pos_hash) do
+    for bond_rec in bonds_registry.pairs_for_voxel(entry.pos_hash) do
       if bond_rec.type == bonds_types.SHAFT then
         if not (bond_rec.omega_rpm == rpm) then
           bond_rec.omega_rpm = rpm
