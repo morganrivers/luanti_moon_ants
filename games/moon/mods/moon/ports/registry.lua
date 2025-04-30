@@ -1,10 +1,25 @@
 -- ports/registry.lua
 -- Stores every port instance keyed by voxel position and holds current latch/state values
 
+
+
+
+
 local util = dofile(minetest.get_modpath("moon") .. "/util.lua")
 local types = dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
 
-local registry = {}
+
+
+local existing = rawget(_G, "__moon_port_registry")
+if existing then return existing end
+
+local port_map  = {}
+local registry  = { _ports = port_map }   -- _ports lets the test-suite wipe state
+
+-- expose it globally so the next dofile() sees the same table
+_G.__moon_port_registry = registry
+
+
 local port_id_counter = 0       -- 64-bit wrap-around
 local id_modulo = 2^64
 

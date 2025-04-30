@@ -86,7 +86,13 @@ function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
     return false, "Voxels are not adjacent"
   end
   local kA, fA, kB, fB = make_canonical_key(posA, faceA, posB, faceB)
-  if registry.get(posA, faceA) or registry.get(posB, faceB) then
+  print("registry")
+  print(registry)
+  print("registry.get(posA, faceA)")
+  print(registry.get(posA, faceA))
+  if registry.get(util.hash(posA), faceA) or
+     registry.get(util.hash(posB), faceB) then
+    -- if registry.get(posA, faceA) or registry.get(posB, faceB) then
 --  if api.get(posA, faceA) or api.get(posB, faceB) then
     return false, "Bond already exists"
   end
@@ -100,17 +106,32 @@ function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
     state[key] = state_tbl and state_tbl[key] or types.defaults[bond_type] and types.defaults[bond_type][key] or nil
   end
 
-  print("util.hash(posA)")
-  print(util.hash(posA))
+  -- print("util.hash(posA)")
+  -- print(util.hash(posA))
+  -- local record = {
+  --   type = bond_type,
+  --   state = state,
+  --   posA_hash = util.hash(posA),
+  --   faceA = faceA,
+  --   posB_hash = util.hash(posB),
+  --   faceB = faceB,
+  -- }
+  -- registry.set(record.posA_hash, record.faceA, record.posB_hash, record.faceB, record)
   local record = {
-    type = bond_type,
+    type  = bond_type,
     state = state,
-    posA_hash = util.hash(posA),
-    faceA = faceA,
-    posB_hash = util.hash(posB),
-    faceB = faceB,
+    -- canonical “a” / “b” endpoints (mechanical solver expects these)
+    a = { pos_hash = util.hash(posA), face = faceA },
+    b = { pos_hash = util.hash(posB), face = faceB },
   }
-  registry.set(record.posA_hash, record.faceA, record.posB_hash, record.faceB, record)
+  -- surface frequently-used state fields at top level (omega_rpm…)
+  for k, v in pairs(state) do record[k] = v end
+
+  registry.set(record.a.pos_hash, record.a.face,
+               record.b.pos_hash, record.b.face,
+               record)
+
+  print("have set the registry.")
   -- registry.insert(kA, fA, kB, fB, record)
   return true, record
 end
@@ -120,7 +141,9 @@ end
 function api.break_bond(posA, faceA)
   local record = registry.get(util.hash(posA), faceA)
   if not record then return false end
-  registry.delete(record.posA_hash, record.faceA, record.posB_hash, record.faceB)
+  -- registry.delete(record.posA_hash, record.faceA, record.posB_hash, record.faceB)
+  registry.delete(record.a.pos_hash, record.a.face,
+                  record.b.pos_hash, record.b.face)
   return true
 end
 

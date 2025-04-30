@@ -1,11 +1,25 @@
 dofile(minetest.get_modpath("moon") .. "/util.lua")
 local types = dofile(minetest.get_modpath("moon") .. "/bonds/types.lua")
 
-registry = {}
+-- Return the already-loaded registry if it exists
+-- if rawget(_G, "__moon_bond_registry") then
+--   return _G.__moon_bond_registry
+-- end
+
+
+local existing = rawget(_G, "__moon_bond_registry")
+if existing then return existing end
+
+local bond_map  = {}
+local registry  = { _bonds = bond_map }   -- _bonds lets the test-suite wipe state
+
+-- expose it globally so the next dofile() sees the same table
+_G.__moon_bond_registry = registry
+-- registry = {}
 
 -- Internal bond storage:
 -- Key: pos_hashA<<7|faceA  ..  pos_hashB<<7|faceB (smaller first for symmetry)
-local bond_map = {}
+-- local bond_map = {}
 
 -- -- Helper: canonicalize (pos_hashA, faceA, pos_hashB, faceB) to symmetric key
 -- local function make_bond_key(pos_hashA, faceA, pos_hashB, faceB)
