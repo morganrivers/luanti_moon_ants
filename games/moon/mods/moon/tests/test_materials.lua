@@ -1,6 +1,6 @@
 -- tests/test_materials.lua
 -- Unit tests for material flag registration, density look-ups, reaction triggers
-
+local bit = dofile(minetest.get_modpath("moon") .. "/lib/bit.lua")
 dofile(minetest.get_modpath("moon") .. "/busted.lua")
 local flags = dofile("materials/flags.lua")
 local registry = dofile("materials/registry.lua")
