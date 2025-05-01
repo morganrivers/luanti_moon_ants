@@ -86,10 +86,6 @@ function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
     return false, "Voxels are not adjacent"
   end
   local kA, fA, kB, fB = make_canonical_key(posA, faceA, posB, faceB)
-  print("registry")
-  print(registry)
-  print("registry.get(posA, faceA)")
-  print(registry.get(posA, faceA))
   if registry.get(util.hash(posA), faceA) or
      registry.get(util.hash(posB), faceB) then
     -- if registry.get(posA, faceA) or registry.get(posB, faceB) then
@@ -131,7 +127,6 @@ function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
                record.b.pos_hash, record.b.face,
                record)
 
-  print("have set the registry.")
   -- registry.insert(kA, fA, kB, fB, record)
   return true, record
 end

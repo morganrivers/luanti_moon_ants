@@ -47,7 +47,18 @@ function registry.add(pos_hash, face, class, state)
   assert(types.descriptors[class], "Invalid port class")
   local id = next_id()
   local state_tbl = state or {}
+  -- print("")
+  -- print("adding to port")
+  -- print("pos_hash")
+  -- print(pos_hash)
+  -- print("face")
+  -- print(face)
+  -- print("class")
+  -- print(class)
+  -- print("state_tbl")
+  -- print(state_tbl)
   ports[id] = {
+    id = id,
     pos_hash = pos_hash,
     face = face,
     class = class,
@@ -76,6 +87,8 @@ end
 
 -- Lookup port record by id
 function registry.lookup(id)
+  -- print("ports on lookup")
+  -- print(ports)
   return ports[id]
 end
 

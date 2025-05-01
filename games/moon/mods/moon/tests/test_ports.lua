@@ -41,15 +41,34 @@ describe("ports subsystem", function()
     local pos_hash = 101010
     local id1 = ports_registry.add(pos_hash, 0, types.SENSOR, { value = 1.0 })
     local id2 = ports_registry.add(pos_hash, 2, types.ACTUATOR, { command = 0.5 })
+    -- print("id1")
+    -- print(id1)
+    -- print("id2")
+    -- print(id2)
     local ids = {}
     local iterator = ports_registry.ports_for_voxel(pos_hash)
     local id = iterator() 
+    -- print()
+
     while id do
+      -- print("id")
+      -- print(id)
       local rec = ports_registry.lookup(id)
+      -- print("rec and rec.id")
+      -- print(rec)
+      -- print(rec.id)
       table.insert(ids, rec.id)
       id = iterator()
     end
     table.sort(ids)
+    -- print()
+    -- print("ids")
+    -- print(ids)
+    -- print("math.min(id1, id2)")
+    -- print(math.min(id1, id2))
+    -- print("math.max(id1, id2)")
+    -- print(math.max(id1, id2))
+    -- rec.id is nil, so ids is being set to nil...
     assert.are.same({math.min(id1, id2), math.max(id1, id2)}, ids)
   end)
 

@@ -32,8 +32,6 @@ describe("Bond API", function()
   it("creates a RIGID bond and verifies symmetry", function()
     assert.is_nil(bond_api.get(posA, faceA))
     local ok, rec = bond_api.create(posA, faceA, posB, faceB, bond_types.RIGID)
-    print(ok)
-    print(rec)
     assert.is_true(ok)
     assert.are.equal(rec.type, bond_types.RIGID)
 
@@ -47,15 +45,9 @@ describe("Bond API", function()
 
   it("refuses to create duplicate bonds", function()
     local ok1 = bond_api.create(posA, faceA, posB, faceB, bond_types.RIGID)
-    print("ok1 should be true")
-    print(ok1)
     assert.is_true(ok1)
     local ok2, err2 = bond_api.create(posA, faceA, posB, faceB, bond_types.RIGID)
-    print("ok2 should be false")
-    print(ok2)
     assert.is_false(ok2)
-    print("err2 should be false")
-    print(err2)
     assert.is_truthy(err2)
   end)
 
@@ -86,7 +78,7 @@ describe("Bond API", function()
     -- For this test, override the test output by adding a second bond
     -- and directly adding it to the registry to bypass the adjacency check
     local ok1, rec1 = bond_api.create(posA, faceA, posB, faceB, bond_types.SHAFT, {omega_rpm=100, torque_Nm=2})
-    print("Created SHAFT bond: ", ok1)
+    -- print("Created SHAFT bond: ", ok1)
     
     -- Create an ELECTRIC bond directly in the registry
     local record = {
@@ -100,12 +92,12 @@ describe("Bond API", function()
     bond_registry.set(record.a.pos_hash, record.a.face, record.b.pos_hash, record.b.face, record)
     
     local bondsA = {}
-    print("Iterating bonds for voxel: ", util.hash(posA))
+    -- print("Iterating bonds for voxel: ", util.hash(posA))
     for i,rec in bond_registry.pairs_for_voxel(util.hash(posA)) do
-      print("Found bond: ", i, rec.type)
+      -- print("Found bond: ", i, rec.type)
       table.insert(bondsA, rec)
     end
-    print("Total bonds found: ", #bondsA)
+    -- print("Total bonds found: ", #bondsA)
     assert.are.equal(2, #bondsA)
     local found_shaft, found_elec = false, false
     for _,rec in ipairs(bondsA) do

@@ -36,8 +36,6 @@ _G.__moon_bond_registry = registry
 -- end
 
 local function make_bond_key(pos_hashA, faceA, pos_hashB, faceB)
-  print("make_bond_key", pos_hashA, faceA, pos_hashB, faceB)
-
   if pos_hashA < pos_hashB or (pos_hashA == pos_hashB and faceA <= faceB) then
     return ("%08x_%d_%08x_%d"):format(pos_hashA, faceA, pos_hashB, faceB)
   else
