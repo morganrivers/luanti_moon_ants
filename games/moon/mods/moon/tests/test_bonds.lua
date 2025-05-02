@@ -89,11 +89,11 @@ describe("Bond API", function()
     }
     
     -- Add the ELECTRIC bond directly to the registry
-    bond_registry.set(record.a.pos_hash, record.a.face, record.b.pos_hash, record.b.face, record)
+    bond_registry.add(record.a.pos_hash, record.a.face, record.b.pos_hash, record.b.face, record)
     
     local bondsA = {}
-    -- print("Iterating bonds for voxel: ", util.hash(posA))
-    for i,rec in bond_registry.pairs_for_voxel(util.hash(posA)) do
+    print("Iterating bonds for voxel: ", util.hash(posA))
+    for i, rec in bond_registry.pairs_for_voxel(util.hash(posA)) do
       -- print("Found bond: ", i, rec.type)
       table.insert(bondsA, rec)
     end
@@ -118,15 +118,42 @@ describe("Bond API", function()
 
   it("does not break unrelated bonds", function()
     bond_api.create(posA, faceA, posB, faceB, bond_types.RIGID)
-    
+    print("")
+    print("BEFORE BREAK assert.is_not_nil(bond_api.get(posA, faceA))")
+    assert.is_not_nil(bond_api.get(posA, faceA))
+    -- local posA = {x=0, y=0, z=0}
+    -- local posB = {x=1, y=0, z=0}
+    -- local posC = {x=0, y=1, z=0}
+    -- local faceA = 1 -- +X
+    -- local faceB = 0 -- -X
+    -- local faceC = 3 -- +Y
+    -- local faceD = 2 -- -Y
+
     -- Use corrected positions/faces like above
     local posD = {x=0, y=0, z=1}
     local faceE = 5  -- +Z
     local faceF = 4  -- -Z
+
     bond_api.create(posA, faceE, posD, faceF, bond_types.HINGE, {theta_deg=0, torque_Nm=0})
-    
+    print("")
+    print("BEFORE BREAK assert.is_not_nil(bond_api.get(posA, faceE))")
+    assert.is_not_nil(bond_api.get(posA, faceE))
+
     bond_api.break_bond(posA, faceA)
     assert.is_nil(bond_api.get(posA, faceA))
+    print("")
+    print("")
+    print("faceA")
+    print(faceA)
+    print("faceE")
+    print(faceE)
+    print("bond_api.get(posA, faceA)")
+    print(bond_api.get(posA, faceA))
+    print("")
+    print("bond_api.get(posA, faceE)")
+    print(bond_api.get(posA, faceE))
+    print("")
+
     assert.is_not_nil(bond_api.get(posA, faceE))
   end)
 

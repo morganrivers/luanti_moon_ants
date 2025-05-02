@@ -16,6 +16,16 @@ local function are_adjacent(posA, faceA, posB, faceB)
   local dirs = util.axis_dirs
   local dirA = dirs[faceA]
   local dirB = dirs[faceB]
+  print("")
+  print("Are adjacent: dirs")
+  print("Dirs face A x y")
+  print(dirA.x)
+  print(dirA.y)
+  print("Dirs face B")
+  print(dirB.x)
+  print(dirB.y)
+  print("")
+
   -- posB must be posA + dirA, and posA must be posB + dirB (i.e. inverse)
   return
     posB.x == posA.x + dirA.x and
@@ -37,64 +47,28 @@ local function make_canonical_key(posA, faceA, posB, faceB)
   end
 end
 
--- -- Create a bond between two voxel faces; fails if not adjacent, not opposite, or bond exists
--- function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
---   if not faces_are_opposite(faceA, faceB) then
---     return nil, "Faces are not opposite"
---   end
---   if not are_adjacent(posA, faceA, posB, faceB) then
---     return nil, "Voxels are not adjacent"
---   end
---   local kA, fA, kB, fB = make_canonical_key(posA, faceA, posB, faceB)
---   if registry.get(posA, faceA) or registry.get(posB, faceB) then
---     return nil, "Bond already exists"
---   end
---   print("types")
---   print(types)
---   if not types.fields[bond_type] then
---     return nil, "Unknown bond type"
---   end
-
---   -- local bond_type_rec = types[bond_type]
---   -- if not bond_type_rec then
---   --   return nil, "Unknown bond type"
---   -- end
---   -- Shallow copy state_tbl or type default
---   local state = {}
---   if bond_type_rec.state_keys then
---     for _, key in ipairs(bond_type_rec.state_keys) do
---       state[key] = state_tbl and state_tbl[key] or bond_type_rec.defaults and bond_type_rec.defaults[key] or nil
---     end
---   end
---   local record = {
---     type = bond_type,
---     state = state,
---     posA_hash = util.hash(posA),
---     faceA = faceA,
---     posB_hash = util.hash(posB),
---     faceB = faceB,
---   }
---   registry.insert(kA, fA, kB, fB, record)
---   return record
--- end
 
 function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
   if not faces_are_opposite(faceA, faceB) then
+    print("ERROR: cannot create bond: Faces are not opposite")
     return false, "Faces are not opposite"
   end
   if not are_adjacent(posA, faceA, posB, faceB) then
+    print("ERROR: cannot create bond: Voxels are not adjacent")
     return false, "Voxels are not adjacent"
   end
+  print("1")
   local kA, fA, kB, fB = make_canonical_key(posA, faceA, posB, faceB)
   if registry.get(util.hash(posA), faceA) or
      registry.get(util.hash(posB), faceB) then
-    -- if registry.get(posA, faceA) or registry.get(posB, faceB) then
---  if api.get(posA, faceA) or api.get(posB, faceB) then
+    print("ERROR: cannot create bond: Bond already exists")
     return false, "Bond already exists"
   end
   if not types.fields[bond_type] then
+    print("ERROR: cannot create bond: Unknown bond type")
     return false, "Unknown bond type"
   end
+  print("2")
 
   -- Shallow copy state_tbl or type default
   local state = {}
@@ -102,17 +76,6 @@ function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
     state[key] = state_tbl and state_tbl[key] or types.defaults[bond_type] and types.defaults[bond_type][key] or nil
   end
 
-  -- print("util.hash(posA)")
-  -- print(util.hash(posA))
-  -- local record = {
-  --   type = bond_type,
-  --   state = state,
-  --   posA_hash = util.hash(posA),
-  --   faceA = faceA,
-  --   posB_hash = util.hash(posB),
-  --   faceB = faceB,
-  -- }
-  -- registry.set(record.posA_hash, record.faceA, record.posB_hash, record.faceB, record)
   local record = {
     type  = bond_type,
     state = state,
@@ -120,10 +83,26 @@ function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
     a = { pos_hash = util.hash(posA), face = faceA },
     b = { pos_hash = util.hash(posB), face = faceB },
   }
+  print("")
+  print("CREATE record")
+  print(record)
+  print("record.a.pos_hash")
+  print(record.a.pos_hash)
+  print("record.b.pos_hash")
+  print(record.b.pos_hash)
+  print("record.a.face")
+  print(record.a.face)
+  print("record.b.face")
+  print(record.b.face)
+  print("record.type")
+  print(record.type)
+  print("record.state")
+  print(record.state)
+  print("")
   -- surface frequently-used state fields at top level (omega_rpm…)
   for k, v in pairs(state) do record[k] = v end
 
-  registry.set(record.a.pos_hash, record.a.face,
+  registry.add(record.a.pos_hash, record.a.face,
                record.b.pos_hash, record.b.face,
                record)
 
@@ -135,6 +114,16 @@ end
 -- Breaks (removes) the bond at posA,faceA (and its dual)
 function api.break_bond(posA, faceA)
   local record = registry.get(util.hash(posA), faceA)
+  print()
+  print("break_bond")
+  print("record.a.pos_hash")
+  print(record.a.pos_hash)
+  print("record.a.face")
+  print(record.a.face)
+  print("record.b.pos_hash")
+  print(record.b.pos_hash)
+  print("record.b.face")
+  print(record.b.face)
   if not record then return false end
   -- registry.delete(record.posA_hash, record.faceA, record.posB_hash, record.faceB)
   registry.delete(record.a.pos_hash, record.a.face,

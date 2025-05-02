@@ -42,6 +42,8 @@ end
 
 -- Add a port, given position hash, face (0..5), class (enum), and optional state table
 function registry.add(pos_hash, face, class, state)
+  print("type(pos_hash)")
+  print(type(pos_hash))
   assert(type(pos_hash) == "number", "pos_hash must be number")
   assert(face >= 0 and face <= 5, "face must be 0..5")
   assert(types.descriptors[class], "Invalid port class")

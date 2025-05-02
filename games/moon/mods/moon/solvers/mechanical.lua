@@ -32,6 +32,8 @@ local function collect_shaft_chains(island)
   clear_table(tmp_visited)
   local chains = {}
   for vx_hash in pairs(island.voxels) do
+    print("vx_hash in island")
+    print(vx_hash)
     if not tmp_visited[vx_hash] then
       -- Depth-first traversal
       clear_table(tmp_bond_stack)
@@ -41,13 +43,51 @@ local function collect_shaft_chains(island)
       while #tmp_bond_stack > 0 do
         local entry = table.remove(tmp_bond_stack)
         local pos_hash = entry[1]
+        print("pos_hash")
+        print(pos_hash)
         local in_bond  = entry[2]
         if not tmp_visited[pos_hash] then
           tmp_visited[pos_hash] = true
           chain[#chain+1] = {pos_hash=pos_hash, incoming_bond=in_bond}
           chain_set[pos_hash] = true
-          for bond_rec in bonds_registry.pairs_for_voxel(pos_hash) do
+          print("bonds_registry")
+          print(bonds_registry)
+          print("pos_hash")
+          print(pos_hash)
+          print("bonds_registry.pairs_for_voxel(pos_hash)")
+          print(bonds_registry.pairs_for_voxel(pos_hash))
+
+          for _, bond_rec in bonds_registry.pairs_for_voxel(pos_hash) do
+            print("bond_rec.type")
+            print(bond_rec.type)
+            print(bond_rec.a)
+            print(bond_rec.torque_Nm)
+            print(bond_rec)
+            print("bonds_types.SHAFT")
+            print(bonds_types.SHAFT)
             if bond_rec.type == bonds_types.SHAFT then
+              for i, j in pairs(bond_rec) do
+              print("")
+              print("bond_rec loop START")
+              print("i")
+              print(i)
+              print("j")
+              print(j)
+              print("bond_rec loop END")
+              print("")
+              end
+              
+
+              -- CLEARLY THE ISSUE IS THAT I CANT ACCESS POS_HASH FROM THIS RECORD!
+              -- THE INFORMATION SIMPLY ISNT THERE
+
+              print("")
+              -- assert.is_nil(bond_api.get(posA, faceA))
+              -- unsure if this means of accessing the pos_hash is valid? What is a, b?
+              print("bond_rec.b.pos_hash")
+              -- print(bond_rec.torque_Nm.pos_hash)
+              print("")
+              -- I dont get it. bond record 
               local nbr_hash = (bond_rec.a.pos_hash == pos_hash) and bond_rec.b.pos_hash or bond_rec.a.pos_hash
               if not chain_set[nbr_hash] then
                 tmp_bond_stack[#tmp_bond_stack+1] = {nbr_hash, bond_rec}
@@ -204,6 +244,7 @@ end
 local function step(island, dt)
   local dirty = false
   -- 1. SHAFT chains: propagate rpm and actuator commands
+  print("propagating shaft chains")
   local chains = collect_shaft_chains(island)
   for _, chain in ipairs(chains) do
     if propagate_shaft_rpm(chain, island) then
