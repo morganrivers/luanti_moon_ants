@@ -18,7 +18,76 @@ minetest.log("action", "[MOON MOD] Loading terrain generation...")
 dofile(minetest.get_modpath("moon") .. "/terrain.lua")
 
 -- Load map generation settings and decorations
-dofile(minetest.get_modpath("moon") .. "/mapgen.lua")
+-- dofile(minetest.get_modpath("moon") .. "/mapgen.lua")
+
+
+
+
+
+
+
+
+
+
+--[[
+    Crater MG - Crater Map Generator for Minetest
+    (c) Pierre-Yves Rollo
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+--]]
+
+cratermg = {}
+
+cratermg.name = minetest.get_current_modname()
+cratermg.path = minetest.get_modpath(minetest.get_current_modname())
+
+cratermg.materials = {}
+cratermg.noises = {}
+
+cratermg.profile = dofile(cratermg.path..'/profile.lua')
+
+dofile(cratermg.path..'/functions.lua')
+dofile(cratermg.path..'/config.lua')
+-- dofile(cratermg.path..'/oregen.lua')
+dofile(cratermg.path..'/mapgen.lua')
+
+dofile(cratermg.path..'/default.lua')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- Load nest AFTER terrain generation to ensure it's not overwritten
 minetest.log("action", "[MOON MOD] Setting up initial nest...")
@@ -106,3 +175,4 @@ minetest.register_chatcommand("deployhub", {
 })
 
 minetest.log("action", "[MOON MOD] Initialization complete!")
+
