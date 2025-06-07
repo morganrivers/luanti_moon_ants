@@ -1,0 +1,72 @@
+ games/moon/mods/moon/CLAUDE.md                     |  22 +
+ games/moon/mods/moon/README.md                     | 101 +++
+ games/moon/mods/moon/ant/constants.lua             |  26 -
+ games/moon/mods/moon/ant/digging.lua               | 570 --------------
+ games/moon/mods/moon/ant/entity.lua                | 380 ----------
+ games/moon/mods/moon/ant/movement.lua              |  41 -
+ games/moon/mods/moon/ant/out.txt                   | 837 ---------------------
+ games/moon/mods/moon/ant/resource.lua              |  48 --
+ games/moon/mods/moon/bonds/api.lua                 | 158 ++++
+ games/moon/mods/moon/bonds/registry.lua            | 132 ++++
+ games/moon/mods/moon/bonds/types.lua               |  44 ++
+ games/moon/mods/moon/busted.lua                    |   3 +
+ games/moon/mods/moon/challenges.lua                | 284 -------
+ games/moon/mods/moon/constants.lua                 |  46 ++
+ games/moon/mods/moon/depends.txt                   |   1 -
+ games/moon/mods/moon/energy.lua                    | 263 -------
+ games/moon/mods/moon/genetics.lua                  | 357 ---------
+ games/moon/mods/moon/gravity.lua                   |  45 --
+ games/moon/mods/moon/init.lua                      | 136 ++--
+ games/moon/mods/moon/islands/detector.lua          | 123 +++
+ games/moon/mods/moon/islands/queue.lua             | 133 ++++
+ games/moon/mods/moon/materials/flags.lua           |  40 +
+ games/moon/mods/moon/materials/reactions.lua       |  73 ++
+ games/moon/mods/moon/materials/registry.lua        |  70 ++
+ games/moon/mods/moon/mod.conf                      |   2 -
+ games/moon/mods/moon/nodes.lua                     |  26 -
+ games/moon/mods/moon/ports/api.lua                 |  50 ++
+ games/moon/mods/moon/ports/registry.lua            | 116 +++
+ games/moon/mods/moon/ports/types.lua               |  58 ++
+ games/moon/mods/moon/resources.lua                 | 373 ---------
+ games/moon/mods/moon/runtime/debug_overlay.lua     | 212 ++++++
+ games/moon/mods/moon/runtime/profiler.lua          | 140 ++++
+ games/moon/mods/moon/runtime/tick_scheduler.lua    | 131 ++++
+ games/moon/mods/moon/solvers/chemistry.lua         |  68 ++
+ games/moon/mods/moon/solvers/electrical.lua        | 202 +++++
+ games/moon/mods/moon/solvers/logic.lua             | 168 +++++
+ games/moon/mods/moon/solvers/material_flow.lua     | 216 ++++++
+ games/moon/mods/moon/solvers/mechanical.lua        | 272 +++++++
+ games/moon/mods/moon/solvers/mining.lua            |  85 +++
+ games/moon/mods/moon/solvers/rf.lua                | 126 ++++
+ games/moon/mods/moon/solvers/thermal.lua           | 116 +++
+ games/moon/mods/moon/tests/helper.lua              |  79 ++
+ games/moon/mods/moon/tests/test_bonds.lua          | 180 +++++
+ games/moon/mods/moon/tests/test_materials.lua      | 106 +++
+ games/moon/mods/moon/tests/test_ports.lua          | 147 ++++
+ games/moon/mods/moon/tests/test_runner.lua         |  23 +
+ games/moon/mods/moon/tests/test_solvers.lua        | 287 +++++++
+ games/moon/mods/moon/textures/ant.png              | Bin 48314 -> 0 bytes
+ .../moon/mods/moon/textures/moon_ant_blueprint.png |   0
+ games/moon/mods/moon/textures/moon_ant_cocoon.png  |   0
+ games/moon/mods/moon/textures/moon_battery.png     |   0
+ .../mods/moon/textures/moon_fabricator_bottom.png  |   0
+ .../mods/moon/textures/moon_fabricator_side.png    |   0
+ .../mods/moon/textures/moon_fabricator_top.png     |   0
+ games/moon/mods/moon/textures/moon_ice_chunk.png   |   0
+ .../moon/mods/moon/textures/moon_ice_particle.png  |   0
+ games/moon/mods/moon/textures/moon_ice_rock.png    |   0
+ games/moon/mods/moon/textures/moon_metal_piece.png |   0
+ games/moon/mods/moon/textures/moon_nest_core.png   | Bin 163 -> 0 bytes
+ games/moon/mods/moon/textures/moon_ore_metal.png   |   0
+ .../mods/moon/textures/moon_phosphorus_nodule.png  |   0
+ .../mods/moon/textures/moon_phosphorus_piece.png   |   0
+ .../mods/moon/textures/moon_radiation_particle.png |   0
+ .../mods/moon/textures/moon_regolith_hardened.png  |   0
+ .../moon/mods/moon/textures/moon_solar_bottom.png  | Bin 149 -> 0 bytes
+ games/moon/mods/moon/textures/moon_solar_side.png  | Bin 149 -> 0 bytes
+ games/moon/mods/moon/textures/moon_solar_top.png   | Bin 163 -> 0 bytes
+ games/moon/mods/moon/util.lua                      | 182 +++++
+ games/moon/mods/moon/util/table_extend.lua         |   5 -
+ games/moon/mods/moon/voxels/metadata.lua           |  32 +
+ games/moon/mods/moon/voxels/serialization.lua      | 121 +++
+ 71 files changed, 4119 insertions(+), 3337 deletions(-)

@@ -28,7 +28,7 @@ minetest.register_on_generated(function(minp, maxp, blockseed)
     local pr = PseudoRandom(blockseed + 1521)
     
     -- Very rare chance for an ice patch (1 in 500 chunks)
-    if pr:next(1, 500) <= 1 then
+    if pr:next(1, 1) <= 1 then
         -- Find a crater or low point for the ice
         local ice_pos = {
             x = pr:next(minp.x, maxp.x),
@@ -408,6 +408,13 @@ local function get_craters_list(minp, maxp)
                         elseif radius > 200 then -- Very large craters are even deeper
                             depth_factor = 0.6
                         end
+                        
+                        -- 20% chance for super deep craters (5x deeper)
+                        local is_super_deep = false
+                        if random() < 0.2 then
+                            depth_factor = depth_factor * 5
+                            is_super_deep = true
+                        end
 
                         local crater = {
                             x = x * scale.mapsize + random(scale.mapsize-1),
@@ -417,6 +424,7 @@ local function get_craters_list(minp, maxp)
                             depth = radius * (random() + 1) * depth_factor,
                             -- depth = radius * (random() + 1) * 0.2 * 1.5,
                             age = math.sqrt(radius) * (random()*0.7 + 0.3),
+                            is_super_deep = is_super_deep,
                         }
 
                         -- Chose a debris type for this crater
@@ -618,12 +626,18 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
                             max_level = min(max(ceil(max_level), minp.y), maxp.y)
 
                             vmiy = vmix + (min_level - minp.y) * yinc
+                            
                             for y = min_level, max_level do
                                 if y < floor(edge_level) then
                                     mapdata[vmiy] = c.crater_edge
                                 elseif y < floor(debris_level) then
-                                    mapdata[vmiy] = crater.debris and
-                                            crater.debris.cid or c.crater_fill
+                                    -- Place ice at the very bottom of super deep craters
+                                    if crater.is_super_deep and y == min_level then
+                                        mapdata[vmiy] = minetest.get_content_id("default:ice")
+                                    else
+                                        mapdata[vmiy] = crater.debris and
+                                                crater.debris.cid or c.crater_fill
+                                    end
                                 elseif y < floor(fill_level) then
                                     mapdata[vmiy] = c.crater_fill
                                 else
