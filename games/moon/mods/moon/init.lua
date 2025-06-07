@@ -1,21 +1,13 @@
--- Moon Mod Initialization
-minetest.log("action", "[MOON MOD] Initializing moon mod...")
-local modname = minetest.get_current_modname()
-local modpath = minetest.get_modpath(modname)
--- Load basic nodes first
-dofile(minetest.get_modpath("moon") .. "/nodes.lua")
+-- primitive-engine/init.lua
+-- Entry point: loads sub-modules, creates global `moon` namespace, registers global-step hook to runtime scheduler
 
--- Apply gravity settings for lunar environment
-dofile(minetest.get_modpath("moon") .. "/gravity.lua")
+-- Dependency order: constants → util → materials → voxels → bonds → ports → islands → solvers → runtime
 
--- Load resources and energy systems BEFORE terrain generation
-minetest.log("action", "[MOON MOD] Loading resources and energy systems...")
-dofile(minetest.get_modpath("moon") .. "/resources.lua")
-dofile(minetest.get_modpath("moon") .. "/energy.lua")
+local modpath = minetest.get_modpath(minetest.get_current_modname())
 
--- Load terrain generation (after resource definitions)
-minetest.log("action", "[MOON MOD] Loading terrain generation...")
-dofile(minetest.get_modpath("moon") .. "/terrain.lua")
+-- Core constants and utilities
+dofile(modpath .. "/constants.lua")
+dofile(modpath .. "/util.lua")
 
 -- Load map generation settings and decorations
 -- dofile(minetest.get_modpath("moon") .. "/mapgen.lua")
@@ -88,77 +80,64 @@ dofile(cratermg.path..'/default.lua')
 
 
 
+-- Materials subsystem
+local materials = {}
+materials.flags    = dofile(modpath .. "/materials/flags.lua")
+materials.registry = dofile(modpath .. "/materials/registry.lua")
+materials.reactions = dofile(modpath .. "/materials/reactions.lua")
 
--- Load nest AFTER terrain generation to ensure it's not overwritten
-minetest.log("action", "[MOON MOD] Setting up initial nest...")
-dofile(minetest.get_modpath("moon") .. "/nests.lua")
+-- Voxels subsystem
+local voxels = {}
+voxels.metadata      = dofile(modpath .. "/voxels/metadata.lua")
+voxels.serialization = dofile(modpath .. "/voxels/serialization.lua")
 
--- Load ant entities (after resources/energy systems)
-minetest.log("action", "[MOON MOD] Loading ant entities...")
--- helpers first
-dofile(modpath.."/util/table_extend.lua")
+-- Bonds subsystem
+local bonds = {}
+bonds.types    = dofile(modpath .. "/bonds/types.lua")
+bonds.registry = dofile(modpath .. "/bonds/registry.lua")
+bonds.api      = dofile(modpath .. "/bonds/api.lua")
 
--- ant logic (order does not matter because entity.lua
--- pulls the modules when it runs)
-dofile(modpath.."/ant/constants.lua")
-dofile(modpath.."/ant/movement.lua")
-dofile(modpath.."/ant/digging.lua")
-dofile(modpath.."/ant/resource.lua")
-dofile(modpath.."/ant/entity.lua")
+-- Ports subsystem
+local ports = {}
+ports.types    = dofile(modpath .. "/ports/types.lua")
+ports.registry = dofile(modpath .. "/ports/registry.lua")
+ports.api      = dofile(modpath .. "/ports/api.lua")
 
--- Load environmental challenges
-minetest.log("action", "[MOON MOD] Loading environmental challenges...")
-dofile(minetest.get_modpath("moon") .. "/challenges.lua")
+-- Islands subsystem
+local islands = {}
+islands.detector = dofile(modpath .. "/islands/detector.lua")
+islands.queue    = dofile(modpath .. "/islands/queue.lua")
 
--- Load genetics and evolution system
-minetest.log("action", "[MOON MOD] Loading genetics and evolution system...")
-dofile(minetest.get_modpath("moon") .. "/genetics.lua")
+-- Solvers
+local solvers = {}
+solvers.electrical    = dofile(modpath .. "/solvers/electrical.lua")
+solvers.logic         = dofile(modpath .. "/solvers/logic.lua")
+solvers.mechanical    = dofile(modpath .. "/solvers/mechanical.lua")
+solvers.thermal       = dofile(modpath .. "/solvers/thermal.lua")
+solvers.chemistry     = dofile(modpath .. "/solvers/chemistry.lua")
+solvers.material_flow = dofile(modpath .. "/solvers/material_flow.lua")
+solvers.rf            = dofile(modpath .. "/solvers/rf.lua")
+solvers.mining        = dofile(modpath .. "/solvers/mining.lua")
 
--- Enable creative-mode digging for testing
-minetest.override_item("", {
-    tool_capabilities = {
-        full_punch_interval = 0.1,
-        max_drop_level = 3,
-        groupcaps = {
-            cracky = {times = {[1]=0.0, [2]=0.0, [3]=0.0}, uses=0, maxlevel=3},
-            crumbly = {times = {[1]=0.0, [2]=0.0, [3]=0.0}, uses=0, maxlevel=3},
-            snappy = {times = {[1]=0.0, [2]=0.0, [3]=0.0}, uses=0, maxlevel=3},
-            choppy = {times = {[1]=0.0, [2]=0.0, [3]=0.0}, uses=0, maxlevel=3},
-            oddly_breakable_by_hand = {times = {[1]=0.0, [2]=0.0, [3]=0.0}, uses=0, maxlevel=3},
-        },
-        damage_groups = {fleshy=1},
-    }
-})
+-- Runtime
+local runtime = {}
+runtime.tick_scheduler = dofile(modpath .. "/runtime/tick_scheduler.lua")
+runtime.profiler       = dofile(modpath .. "/runtime/profiler.lua")
+runtime.debug_overlay  = dofile(modpath .. "/runtime/debug_overlay.lua")
 
--- Register some additional helpful commands
-minetest.register_chatcommand("deployprinter", {
-    description = "Deploy an Electroplating Fabricator at your position",
-    func = function(name, param)
-        local player = minetest.get_player_by_name(name)
-        if not player then return false, "Player not found" end
-        
-        local pos = player:get_pos()
-        pos.y = math.floor(pos.y)
-        
-        minetest.set_node(pos, {name = "moon:fabricator"})
-        return true, "Electroplating Fabricator deployed at " .. minetest.pos_to_string(pos)
-    end,
-})
+-- Canonical moon namespace
+moon = {
+    MATERIAL   = materials.flags,
+    BOND       = bonds.types,
+    PORT       = ports.types,
+    -- sub-modules for direct access
+    materials  = materials.registry,
+    bonds      = bonds.registry,
+    ports      = ports.registry,
+}
 
-minetest.register_chatcommand("deploysolar", {
-    description = "Deploy a Solar Array at your position",
-    func = function(name, param)
-        local player = minetest.get_player_by_name(name)
-        if not player then return false, "Player not found" end
-        
-        local pos = player:get_pos()
-        pos.y = math.floor(pos.y)
-        
-        minetest.set_node(pos, {name = "moon:solar_array"})
-        minetest.get_node_timer(pos):start(10)
-        return true, "Solar Array deployed at " .. minetest.pos_to_string(pos)
-    end,
-})
+-- Register globalstep hook to tick scheduler
+minetest.register_globalstep(runtime.tick_scheduler.global_step)
 
 minetest.register_chatcommand("deployhub", {
     description = "Deploy a Fabrication Hub at your position",
@@ -175,4 +154,3 @@ minetest.register_chatcommand("deployhub", {
 })
 
 minetest.log("action", "[MOON MOD] Initialization complete!")
-
