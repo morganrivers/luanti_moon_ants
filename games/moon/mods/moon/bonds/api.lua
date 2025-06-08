@@ -83,22 +83,22 @@ function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
     a = { pos_hash = util.hash(posA), face = faceA },
     b = { pos_hash = util.hash(posB), face = faceB },
   }
-  print("")
-  print("CREATE record")
-  print(record)
-  print("record.a.pos_hash")
-  print(record.a.pos_hash)
-  print("record.b.pos_hash")
-  print(record.b.pos_hash)
-  print("record.a.face")
-  print(record.a.face)
-  print("record.b.face")
-  print(record.b.face)
-  print("record.type")
-  print(record.type)
-  print("record.state")
-  print(record.state)
-  print("")
+  -- print("")
+  -- print("CREATE record")
+  -- print(record)
+  -- print("record.a.pos_hash")
+  -- print(record.a.pos_hash)
+  -- print("record.b.pos_hash")
+  -- print(record.b.pos_hash)
+  -- print("record.a.face")
+  -- print(record.a.face)
+  -- print("record.b.face")
+  -- print(record.b.face)
+  -- print("record.type")
+  -- print(record.type)
+  -- print("record.state")
+  -- print(record.state)
+  -- print("")
   -- surface frequently-used state fields at top level (omega_rpm…)
   for k, v in pairs(state) do record[k] = v end
 
@@ -106,7 +106,34 @@ function api.create(posA, faceA, posB, faceB, bond_type, state_tbl)
                record.b.pos_hash, record.b.face,
                record)
 
-  -- registry.insert(kA, fA, kB, fB, record)
+  -- Trigger island detection when bond is created
+  if moon and moon.islands and moon.islands.detector then
+    print("[moon] Bond created, detecting new islands...")
+    local all_islands = moon.islands.detector.scan_all()
+    print("[moon] scan_all returned " .. #all_islands .. " islands")
+    
+    -- Debug: log details about first island
+    if #all_islands > 0 then
+      local island = all_islands[1]
+      local voxel_count = 0
+      for _ in pairs(island.voxels or {}) do voxel_count = voxel_count + 1 end
+      print("[moon] First island has " .. voxel_count .. " voxels")
+    end
+    
+    if moon.islands.queue then
+      local now = minetest.get_gametime()
+      for _, island in ipairs(all_islands) do
+        -- Schedule for immediate processing (current time - small offset)
+        moon.islands.queue.push_or_update(island, now - 0.001)
+      end
+      print("[moon] Queued " .. #all_islands .. " islands for processing at time " .. (now - 0.001))
+    else
+      print("[moon] WARNING: queue not available")
+    end
+  else
+    print("[moon] WARNING: islands/detector not available")
+  end
+
   return true, record
 end
 

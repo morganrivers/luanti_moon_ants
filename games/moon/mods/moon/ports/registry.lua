@@ -38,6 +38,13 @@ local function next_id()
   return port_id_counter
 end
 
+
+local _serialize = (minetest and minetest.serialize) or function(tbl)
+  -- fall-back for test-suite: tostring the table without crashing
+  local ok, s = pcall(function() return tostring(tbl) end)
+  return ok and s or "<unserialisable>"
+end
+
 -- API
 
 -- Add a port, given position hash, face (0..5), class (enum), and optional state table
@@ -68,6 +75,16 @@ function registry.add(pos_hash, face, class, state)
   }
   if not ports_by_voxel[pos_hash] then ports_by_voxel[pos_hash] = {} end
   ports_by_voxel[pos_hash][face] = id
+  if minetest and minetest.log then
+
+    minetest.log("action",
+      ("[port:add] id=%d  class=%s  pos=%08x  face=%d  state=%s")
+      :format(id,
+              types.descriptors[class].name,
+              pos_hash, face,
+              minetest.serialize(state_tbl)))
+  end
+
   return id
 end
 

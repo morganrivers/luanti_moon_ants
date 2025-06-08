@@ -111,24 +111,24 @@ dofile(cratermg.path..'/default.lua')
 
 
 -- Materials subsystem
-local materials = {}
+materials = {}
 materials.flags    = dofile(modpath .. "/materials/flags.lua")
 materials.registry = dofile(modpath .. "/materials/registry.lua")
 materials.reactions = dofile(modpath .. "/materials/reactions.lua")
 
 -- Voxels subsystem
-local voxels = {}
+voxels = {}
 voxels.metadata      = dofile(modpath .. "/voxels/metadata.lua")
 voxels.serialization = dofile(modpath .. "/voxels/serialization.lua")
 
 -- Bonds subsystem
-local bonds = {}
+bonds = {}
 bonds.types    = dofile(modpath .. "/bonds/types.lua")
 bonds.registry = dofile(modpath .. "/bonds/registry.lua")
 bonds.api      = dofile(modpath .. "/bonds/api.lua")
 
 -- Ports subsystem
-local ports = {}
+ports = {}
 ports.types    = dofile(modpath .. "/ports/types.lua")
 ports.registry = dofile(modpath .. "/ports/registry.lua")
 ports.api      = dofile(modpath .. "/ports/api.lua")
@@ -138,16 +138,15 @@ local islands = {}
 islands.detector = dofile(modpath .. "/islands/detector.lua")
 islands.queue    = dofile(modpath .. "/islands/queue.lua")
 
--- Solvers
-local solvers = {}
-solvers.electrical    = dofile(modpath .. "/solvers/electrical.lua")
-solvers.logic         = dofile(modpath .. "/solvers/logic.lua")
-solvers.mechanical    = dofile(modpath .. "/solvers/mechanical.lua")
-solvers.thermal       = dofile(modpath .. "/solvers/thermal.lua")
-solvers.chemistry     = dofile(modpath .. "/solvers/chemistry.lua")
-solvers.material_flow = dofile(modpath .. "/solvers/material_flow.lua")
-solvers.rf            = dofile(modpath .. "/solvers/rf.lua")
-solvers.mining        = dofile(modpath .. "/solvers/mining.lua")
+-- Solvers (make global so tick_scheduler can access them)
+electrical    = dofile(modpath .. "/solvers/electrical.lua")
+logic         = dofile(modpath .. "/solvers/logic.lua")
+mechanical    = dofile(modpath .. "/solvers/mechanical.lua")
+thermal       = dofile(modpath .. "/solvers/thermal.lua")
+chemistry     = dofile(modpath .. "/solvers/chemistry.lua")
+material_flow = dofile(modpath .. "/solvers/material_flow.lua")
+rf            = dofile(modpath .. "/solvers/rf.lua")
+mining        = dofile(modpath .. "/solvers/mining.lua")
 
 -- Runtime
 local runtime = {}
@@ -164,10 +163,21 @@ moon = {
     materials  = materials.registry,
     bonds      = bonds.registry,
     ports      = ports.registry,
+    islands    = islands,
 }
 
 -- Register globalstep hook to tick scheduler
 minetest.register_globalstep(runtime.tick_scheduler.global_step)
+
+-- Load debug commands (after moon namespace is created)
+dofile(minetest.get_modpath("moon") .. "/commands/debug.lua")
+
+
+
+
+
+-- Load the special physics nodes (wheels, electronics, etc)
+dofile(minetest.get_modpath("moon") .. "/init_nodes.lua")
 
 
 
@@ -288,6 +298,26 @@ minetest.register_on_respawnplayer(function(player)
   
   player:set_pos(spawn_pos)
   return true
+end)
+
+-- -- Auto-run wheel demo on startup for testing
+-- minetest.register_on_mods_loaded(function()
+--   minetest.after(2, function()  -- Wait 2 seconds after mods loaded
+--     minetest.log("action", "[moon] Auto-running wheel demo...")
+--     local demo_blueprints = dofile(minetest.get_modpath("moon") .. "/schematics/demo_blueprints.lua")
+--     local spawn_pos = {x = 0, y = 1, z = 0}  -- Above spawn point
+--     demo_blueprints.place_wheel_demo(spawn_pos)
+--     minetest.log("action", "[moon] Auto wheel demo completed at " .. minetest.pos_to_string(spawn_pos))
+--   end)
+-- end)
+-- Scan all saved ports/bonds and schedule every island once
+minetest.after(3.5, function()
+  local all = moon.islands.detector.scan_all()
+  local now = minetest.get_gametime()
+  for _, isl in pairs(all) do
+    moon.islands.queue.push_or_update(isl, now - 0.001)  -- run next tick
+  end
+  minetest.log("action", ("[moon] Scheduled %d islands after world load"):format(#all))
 end)
 
 minetest.log("action", "[MOON MOD] Initialization complete!")

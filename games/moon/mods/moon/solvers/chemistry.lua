@@ -19,8 +19,9 @@ local function step(island, dt)
   for pos_hash, _ in pairs(island.voxels) do
     -- Read voxel metadata
     local pos = util.unhash3(pos_hash)
-    local meta = voxels_metadata.read(pos)
-    if meta then
+    if pos then
+      local meta = voxels_metadata.read(pos)
+      if meta then
       local mat = materials_registry.get(meta.material_id)
       if mat and mat.reaction_id ~= 0 then
         local temp = meta.temp or mat.baseline_T or 293
@@ -59,6 +60,7 @@ local function step(island, dt)
             meta.reaction_timer = nil
           end
         end
+      end
       end
     end
   end

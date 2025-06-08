@@ -3,7 +3,7 @@
 
 dofile(minetest.get_modpath("moon") .. "/constants.lua")
 dofile(minetest.get_modpath("moon") .. "/util.lua")
-dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
+local types = dofile(minetest.get_modpath("moon") .. "/ports/types.lua")
 dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
 dofile(minetest.get_modpath("moon") .. "/ports/api.lua")
 dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
@@ -58,9 +58,9 @@ local function move_item_through_port(port_id, port, port_map)
   local dst_pos = step_vec(pos, dir)
   local dst_hash = util.hash(dst_pos)
   -- Find if neighbor has a MATERIAL_IO port facing back
-  for _, neighbor_port_id in ipairs(ports_registry.ports_for_voxel(dst_hash) or {}) do
-    local nport = ports_registry.lookup(neighbor_port_id)
-    if nport and nport.class == moon.PORT.MATERIAL_IO then
+  for _, neighbor_port_id in ipairs(ports.registry.ports_for_voxel(dst_hash) or {}) do
+    local nport = ports.registry.lookup(neighbor_port_id)
+    if nport and nport.class == types.MATERIAL_IO then
       -- Check queue space in neighbor
       if #nport.state.queue < constants.MATERIAL_IO_QUEUE_MAX then
         -- Move item
@@ -85,9 +85,9 @@ local function gravity_move_item(port_id, port)
   local below = step_vec(pos, down)
   -- Only move if there's a MATERIAL_IO port below
   local below_hash = util.hash(below)
-  for _, neighbor_port_id in ipairs(ports_registry.ports_for_voxel(below_hash) or {}) do
-    local nport = ports_registry.lookup(neighbor_port_id)
-    if nport and nport.class == moon.PORT.MATERIAL_IO then
+  for _, neighbor_port_id in ipairs(ports.registry.ports_for_voxel(below_hash) or {}) do
+    local nport = ports.registry.lookup(neighbor_port_id)
+    if nport and nport.class == types.MATERIAL_IO then
       if #nport.state.queue < constants.MATERIAL_IO_QUEUE_MAX then
         local item = table.remove(port.state.queue, 1)
         if item then
@@ -112,9 +112,9 @@ local function sideways_move_item(port_id, port)
     local side_pos = step_vec(pos, dir)
     if is_conveyor(side_pos) then
       local side_hash = util.hash(side_pos)
-      for _, neighbor_port_id in ipairs(ports_registry.ports_for_voxel(side_hash) or {}) do
-        local nport = ports_registry.lookup(neighbor_port_id)
-        if nport and nport.class == moon.PORT.MATERIAL_IO then
+      for _, neighbor_port_id in ipairs(ports.registry.ports_for_voxel(side_hash) or {}) do
+        local nport = ports.registry.lookup(neighbor_port_id)
+        if nport and nport.class == types.MATERIAL_IO then
           if #nport.state.queue < constants.MATERIAL_IO_QUEUE_MAX then
             local item = table.remove(port.state.queue, 1)
             if item then
@@ -166,8 +166,8 @@ local function step(island, dt)
   -- Build port_id → port map for this island's ports
   local port_map = {}
   for port_id in pairs(island.ports) do
-    local port = ports_registry.lookup(port_id)
-    if port and port.class == moon.PORT.MATERIAL_IO then
+    local port = ports.registry.lookup(port_id)
+    if port and port.class == types.MATERIAL_IO then
       port_map[port_id] = port
     end
   end

@@ -3,6 +3,10 @@
 
 dofile(minetest.get_modpath("moon") .. "/constants.lua")
 
+-- Use singleton pattern like other registries
+local existing = rawget(_G, "__moon_island_queue")
+if existing then return existing end
+
 queue = {}
 queue.__index = queue
 
@@ -55,6 +59,7 @@ local index_map = {}
 -- Push or update an island's scheduled time.
 function queue.push_or_update(island, next_tick_time)
   local id = island_id(island)
+  minetest.log("action", "[moon] push_or_update called with island_id=" .. (id or "nil") .. ", time=" .. next_tick_time)
   local idx = index_map[id]
   if idx then
     -- Update scheduled time and re-heapify
@@ -71,6 +76,7 @@ function queue.push_or_update(island, next_tick_time)
     heap[#heap + 1] = entry
     index_map[id] = #heap
     sift_up(heap, #heap)
+    minetest.log("action", "[moon] Added new island to heap, heap size now: " .. #heap)
   end
 end
 
@@ -97,6 +103,10 @@ end
 
 -- Returns a table of all islands scheduled at or before 'now'.
 function queue.pop_due(now)
+  -- minetest.log("action", "[moon] pop_due called with now=" .. now .. ", heap size=" .. #heap)
+  -- if #heap > 0 then
+    -- minetest.log("action", "[moon] First island scheduled for time " .. heap[1][1])
+  -- end
   local due = {}
   while #heap > 0 and heap[1][1] <= now do
     local entry = heap[1]
@@ -129,5 +139,9 @@ end
 function queue.size()
   return #heap
 end
+
+-- Store globally so subsequent loads return the same instance
+_G.__moon_island_queue = queue
+return queue
 
 

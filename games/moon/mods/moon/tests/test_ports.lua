@@ -7,6 +7,13 @@ local ports_registry = dofile(minetest.get_modpath("moon").."/ports/registry.lua
 local ports_api = dofile(minetest.get_modpath("moon").."/ports/api.lua")
 local util = dofile(minetest.get_modpath("moon").."/util.lua")
 
+--  add near the top, after you grab `types`
+local _serialize = (minetest and minetest.serialize) or function(tbl)
+  -- fall-back for test-suite: tostring the table without crashing
+  local ok, s = pcall(function() return tostring(tbl) end)
+  return ok and s or "<unserialisable>"
+end
+
 describe("ports subsystem", function()
   before_each(function()
     -- Reset registry before each test
@@ -74,7 +81,21 @@ describe("ports subsystem", function()
 
   it("writes and reads port latches correctly", function()
     local pos_hash = 4242
+
     local id = ports_registry.add(pos_hash, 3, types.POWER, { current_A = 0.0 })
+    
+    if minetest and minetest.log then
+      minetest.log("action",
+        ("[port:add] id=%d  class=%s  pos=%08x  face=%d  state=%s")
+          :format(id,
+                  types.descriptors[class].name,
+                  pos_hash, face,
+                  _serialize(state_tbl)))
+    else
+      -- test-suite: write to stdout so the log still exists
+      print(string.format("[port:add] id=%d class=%s pos=%08x face=%d state=%s",
+            id, types.descriptors[class].name, pos_hash, face, _serialize(state_tbl)))
+    end
     ports_api.write(id, "current_A", 5.0)
     local val = ports_api.read(id, "current_A")
     assert.equals(5.0, val)

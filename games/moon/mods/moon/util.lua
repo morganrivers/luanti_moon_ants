@@ -2,7 +2,13 @@
 -- Pure helper functions (vector math, object pools, bit ops) with zero dependencies on domain logic
 local bit = dofile(minetest.get_modpath("moon") .. "/lib/bit.lua")
 
+local existing = rawget(_G, "__moon_util")
+if existing then
+  return existing
+end
+
 util = {}
+_G.__moon_util = util
 
 -- ================================
 -- Vector3 integer math
@@ -177,6 +183,12 @@ function util.unhash3(h)
   return _reverse_hash[h]
 end
 
+-- counts *all* keys in a table (array or hash)
+function util.table_count(t)
+  local n = 0
+  for _ in pairs(t) do n = n + 1 end
+  return n
+end
 
 return util
 

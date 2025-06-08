@@ -23,10 +23,12 @@ describe("Bond API", function()
   local faceD = 2 -- -Y
 
   before_each(function()
+
     -- Clear the registry before each test
     for k in pairs(bond_registry._bonds or {}) do
       bond_registry._bonds[k] = nil
     end
+    bond_registry.clear()      -- wipe both maps
   end)
 
   it("creates a RIGID bond and verifies symmetry", function()
@@ -114,6 +116,46 @@ describe("Bond API", function()
     bond_api.break_bond(posA, faceA)
     assert.is_nil(bond_api.get(posA, faceA))
     assert.is_nil(bond_api.get(posB, faceB))
+  end)
+
+  ----------------------------------------------------------------
+  -- extra-1 : per-voxel index counts the right number of bonds
+  ----------------------------------------------------------------
+  it("keeps per-voxel index in sync with master table", function()
+    local A, B, C = {x=0,y=0,z=0}, {x=1,y=0,z=0}, {x=2,y=0,z=0}
+    local plusX, minusX = 1, 0
+
+    bond_api.create(A, plusX,  B, minusX, bond_types.SHAFT)
+    bond_api.create(B, plusX,  C, minusX, bond_types.SHAFT)
+
+    local function count_for(pos)
+      local n = 0
+      for _ in bond_registry.pairs_for_voxel(util.hash(pos)) do n = n + 1 end
+      return n
+    end
+
+    assert.are.equal(1, count_for(A))   -- A shares one bond
+    assert.are.equal(2, count_for(B))   -- B shares both
+    assert.are.equal(1, count_for(C))   -- C shares one
+  end)
+
+  ----------------------------------------------------------------
+  -- extra-2 : delete() removes a bond from **both** voxel indices
+  ----------------------------------------------------------------
+  it("removes bond from both voxel indices after delete()", function()
+    local P, Q = {x=0,y=0,z=0}, {x=1,y=0,z=0}
+    local plusX, minusX = 1, 0
+
+    bond_api.create(P, plusX, Q, minusX, bond_types.RIGID)
+    assert.is_not_nil(bond_api.get(P, plusX))   -- sanity check
+
+    bond_registry.delete(util.hash(P), plusX, util.hash(Q), minusX)
+
+    local function has_any(pos)
+      return bond_registry.pairs_for_voxel(util.hash(pos))() ~= nil
+    end
+    assert.is_false(has_any(P))
+    assert.is_false(has_any(Q))
   end)
 
   it("does not break unrelated bonds", function()

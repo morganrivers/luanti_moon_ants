@@ -41,7 +41,7 @@ function mining.step(island, dt)
   local dirty = false
 
   for port_id, port_rec in pairs(island.ports) do
-    local port = ports.lookup(port_id)
+    local port = ports.registry.lookup(port_id)
     if port and port.class == ports.types.MINE_TOOL then
       local state = port.state
       local torque = state.torque or 0
@@ -50,10 +50,11 @@ function mining.step(island, dt)
         local pos_hash = port.pos_hash
         local face     = port.face
         -- Decode position
-        local pos = util.unhash(pos_hash)
-        -- Get voxel face vector
-        local face_vec = FACE_VECTORS[face]
-        if face_vec then
+        local pos = util.unhash3(pos_hash)
+        if pos then
+          -- Get voxel face vector
+          local face_vec = FACE_VECTORS[face]
+          if face_vec then
           -- Compute position of the node in front (target)
           local target_pos = {
             x = pos.x + face_vec.x,
@@ -71,8 +72,9 @@ function mining.step(island, dt)
             local used = math.min(hardness, torque * dt)
             state.hardness = hardness - used
             -- Write back state
-            ports_api.write(port_id, "hardness", state.hardness)
+            ports.api.write(port_id, "hardness", state.hardness)
             dirty = true
+          end
           end
         end
       end

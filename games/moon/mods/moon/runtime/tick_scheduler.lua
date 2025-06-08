@@ -27,20 +27,21 @@ local max_islands_per_tick = constants.MAX_ISLANDS_PER_TICK or 64
 -- Schedule an island for the next tick or after idle interval
 local function reschedule_island(island, now, dirty)
     if dirty then
-        queue.push(island, now + TICK_LENGTH)
+        queue.push_or_update(island, now + TICK_LENGTH)
     else
-        queue.push(island, now + IDLE_INTERVAL)
+        queue.push_or_update(island, now + IDLE_INTERVAL)
     end
 end
 
 -- Master global-step callback
 function tick_scheduler.global_step(dt)
-    local now = minetest.get_gametime() + minetest.get_us_time() * 1e-6 / 1.0e6
+    local now = minetest.get_gametime()
     processed_voxels_this_tick = 0
     local processed_islands = 0
 
     -- Pop all islands due this tick
     local due_islands = queue.pop_due(now)
+    -- minetest.log("action", "[moon] tick_scheduler running at time " .. now .. ", due_islands count: " .. (#due_islands or 0))
     if not due_islands or #due_islands == 0 then
         return
     end
@@ -49,13 +50,14 @@ function tick_scheduler.global_step(dt)
     table.sort(due_islands, function(a, b)
         return (a.id or 0) < (b.id or 0)
     end)
-
+    -- minetest.log("action", ("[moon] about to loop through islands?"))
     for _, island in ipairs(due_islands) do
+        minetest.log("action", ("[moon] in loop"))
         -- Bound per-tick work
         if processed_islands >= max_islands_per_tick or
            processed_voxels_this_tick >= MAX_VOXELS_PER_TICK then
             -- Enqueue remaining islands for next tick
-            queue.push(island, now + TICK_LENGTH)
+            queue.push_or_update(island, now + TICK_LENGTH)
             break
         end
 
@@ -78,6 +80,7 @@ function tick_scheduler.global_step(dt)
         end
 
         -- Step 3: Mechanical (always runs)
+        minetest.log("action", ("[moon] before mechanical step"))
         local mechanical_dirty = mechanical.step(island, dt)
         if mechanical_dirty then
             dirty = true
@@ -119,7 +122,9 @@ function tick_scheduler.global_step(dt)
         -- Track work
         processed_islands = processed_islands + 1
         if island.voxels and type(island.voxels) == "table" then
-            processed_voxels_this_tick = processed_voxels_this_tick + util.table_count(island.voxels)
+            local voxel_count = 0
+            for _ in pairs(island.voxels) do voxel_count = voxel_count + 1 end
+            processed_voxels_this_tick = processed_voxels_this_tick + voxel_count
         end
         if processed_voxels_this_tick >= MAX_VOXELS_PER_TICK then
             break

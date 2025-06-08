@@ -34,31 +34,34 @@ local function build_circuit_graph(island)
   -- Map pos_hash to node_id and populate node_list
   for pos_hash in pairs(island.voxels) do
     local pos = util.unhash3(pos_hash)
-    local meta = voxels_metadata.read(pos)
-    -- Skip if no metadata
-    if not meta then
-      -- Skip if no metadata
-      return
-    end
-    -- Only consider voxels with CONDUCTOR flag
-    local mat = materials_registry.get(meta.material_id or "")
-    if mat and util.has_flag(mat.flags, materials_flags.CONDUCTOR) then
-      node_id = node_id + 1
-      node_map[pos_hash] = node_id
-      -- Check for port
-      local port_id = meta.port_id or 0
-      local port = not (port_id == 0) and ports_api.read(port_id, "class") or nil
-      node_list[node_id] = {
-        pos_hash = pos_hash,
-        port_id = port_id,
-        is_port = ((port_id ~= 0) and port == types.POWER) or false,
-        G = 0,
-        I = 0,
-        V = 0,
-      }
-      if node_list[node_id].is_port then
-        port_nodes[node_id] = true
+    if pos then
+      local meta = voxels_metadata.read(pos)
+      -- Only process if we have metadata
+      if meta then
+        -- Only consider voxels with CONDUCTOR flag
+        local mat = materials_registry.get(meta.material_id or "")
+        if mat and util.has_flag(mat.flags, materials_flags.CONDUCTOR) then
+          node_id = node_id + 1
+          node_map[pos_hash] = node_id
+          -- Check for port
+          local port_id = meta.port_id or 0
+          local port = not (port_id == 0) and ports_api.read(port_id, "class") or nil
+          node_list[node_id] = {
+            pos_hash = pos_hash,
+            port_id = port_id,
+            is_port = ((port_id ~= 0) and port == types.POWER) or false,
+            G = 0,
+            I = 0,
+            V = 0,
+          }
+          if node_list[node_id].is_port then
+            port_nodes[node_id] = true
+          end
+        end
       end
+    else
+      -- Skip if we can't unhash the position
+      minetest.log("warning", "[moon] electrical solver: skipping voxel with invalid pos_hash " .. tostring(pos_hash))
     end
   end
 
@@ -66,20 +69,22 @@ local function build_circuit_graph(island)
   for pos_hash in pairs(island.voxels) do
     for _, bond in bonds_registry.pairs_for_voxel(pos_hash) do
       if bond.type == bonds_types.ELECTRIC then
-        local hashA, hashB = bond.pos_hash_A, bond.pos_hash_B
+        local hashA, hashB = bond.a.pos_hash, bond.b.pos_hash
         local nodeA, nodeB = node_map[hashA], node_map[hashB]
         if nodeA and nodeB and nodeA < nodeB then
           -- Resistance from materials, fallback to small R if missing
           local posA = util.unhash3(hashA)
           local posB = util.unhash3(hashB)
-          local metaA = voxels_metadata.read(posA)
-          local matA  = materials_registry.get(metaA.material_id)
-          local metaB = voxels_metadata.read(posB)
-          local matB  = materials_registry.get(metaB.material_id)
-          local rhoA  = (matA and matA.rho) or 1.0
-          local rhoB  = (matB and matB.rho) or 1.0
-          local R     = (rhoA + rhoB) * constants.VOXEL_EDGE_LEN / 2
-          table.insert(bond_edges, {a = nodeA, b = nodeB, R = R, bond = bond})
+          if posA and posB then
+            local metaA = voxels_metadata.read(posA)
+            local matA  = materials_registry.get(metaA.material_id)
+            local metaB = voxels_metadata.read(posB)
+            local matB  = materials_registry.get(metaB.material_id)
+            local rhoA  = (matA and matA.rho) or 1.0
+            local rhoB  = (matB and matB.rho) or 1.0
+            local R     = (rhoA + rhoB) * constants.VOXEL_EDGE_LEN / 2
+            table.insert(bond_edges, {a = nodeA, b = nodeB, R = R, bond = bond})
+          end
         end
       end
     end

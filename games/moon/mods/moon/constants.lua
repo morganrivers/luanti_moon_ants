@@ -33,7 +33,8 @@ constants.FLAG_FERROMAG    = 2 -- 1 << 2
 constants.FLAG_STRUCTURAL  = 3 -- 1 << 3
 constants.FLAG_FLUID       = 4 -- 1 << 4
 constants.FLAG_REACTIVE    = 5 -- 1 << 5
--- bits 6 and 7 reserved
+constants.MECHANICAL_POSE  = 6 -- 1 << 6 (flag for voxels that update visual pose based on mechanical state)
+-- bit 7 reserved
 
 -- Bit masks for voxel flags (for convenience)
 constants.BIT_CONDUCTOR    = 1 -- << constants.FLAG_CONDUCTOR # DMR: commented this out.. unsure if correct

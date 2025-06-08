@@ -1,11 +1,8 @@
 -- islands/detector.lua
 -- Flood-fill routine to group connected active voxels into simulation islands
 
-dofile(minetest.get_modpath("moon") .. "/constants.lua")
-dofile(minetest.get_modpath("moon") .. "/util.lua")
-dofile(minetest.get_modpath("moon") .. "/voxels/metadata.lua")
-dofile(minetest.get_modpath("moon") .. "/bonds/registry.lua")
-dofile(minetest.get_modpath("moon") .. "/ports/registry.lua")
+-- Use global objects instead of loading individual modules
+-- constants, util, voxels, bonds, ports are all global
 
 local ISLAND_MAX_VOXELS = constants.ISLAND_MAX_VOXELS or 4096
 
@@ -25,29 +22,33 @@ local function flood_fill(seed_pos_hash, seen_voxels, seen_bonds, seen_ports)
     local pos_hash = queue[q_head]
     q_head = q_head + 1
 
-    if seen_voxels[pos_hash] then
+    if not pos_hash then
+      -- Skip nil entries
+    elseif seen_voxels[pos_hash] then
       -- Skip if already seen
     else
       seen_voxels[pos_hash] = true
 
       -- Check for ports on this voxel
-      for _, port in ipairs(ports_registry.ports_for_voxel(pos_hash)) do
-        seen_ports[port.id] = true
+      for port_id in ports.registry.ports_for_voxel(pos_hash) do
+        seen_ports[port_id] = true
       end
 
       -- For every bond touching this voxel
-      for bond_key, bond in bonds_registry.pairs_for_voxel(pos_hash) do
+      for bond_key, bond in bonds.registry.pairs_for_voxel(pos_hash) do
         seen_bonds[bond_key] = true
 
-        local other_hash = bond.pos_hash_A == pos_hash and bond.pos_hash_B or bond.pos_hash_A
-        if not seen_voxels[other_hash] then
+        local other_hash = bond.a.pos_hash == pos_hash and bond.b.pos_hash or bond.a.pos_hash
+        if other_hash and not seen_voxels[other_hash] then
           q_tail = q_tail + 1
           queue[q_tail] = other_hash
         end
       end
 
-      -- Stop if we hit max
-      if util.table_count(seen_voxels) >= ISLAND_MAX_VOXELS then
+      -- Stop if we hit max (count table entries manually)
+      local voxel_count = 0
+      for _ in pairs(seen_voxels) do voxel_count = voxel_count + 1 end
+      if voxel_count >= ISLAND_MAX_VOXELS then
         break
       end
     end
@@ -59,7 +60,7 @@ end
 -- Recomputes all islands from full port list (tick 0)
 function detector.scan_all()
   local seeds = {}
-  for port_id, port in pairs(ports_registry.all()) do
+  for port_id, port in pairs(ports.registry._all_ports()) do
     seeds[port.pos_hash] = true
   end
 
@@ -70,9 +71,37 @@ function detector.scan_all()
     if not assigned[seed_hash] then
       local voxels, bonds, ports = {}, {}, {}
       flood_fill(seed_hash, voxels, bonds, ports)
+      -- minetest.log("action", ("[detector] refresh island_id=%d  voxels=%d  bonds=%d  ports=%d")
+      --   :format(island_id, util.table_count(voxels), util.table_count(bonds), util.table_count(ports)))
+
+      -- for h, _ in pairs(voxels) do
+      --   minetest.log("action", ("[detector]   + voxel %08x"):format(h))
+      -- end
+
+      -- minetest.log("action", ("[detector] scan island_id=%d  voxels=%d  bonds=%d  ports=%d")
+      --   :format(island_id, util.table_count(voxels), util.table_count(bonds), util.table_count(ports)))
+
+      -- for h, _ in pairs(voxels) do
+      --   minetest.log("action", ("[detector]   + voxel %08x"):format(h))
+      -- end
+
       -- Assign all voxels to this island
       local island_id = next_island_id
       next_island_id = next_island_id + 1
+
+      
+      -- debug: summary
+      minetest.log("action", ("[detector] island %d  voxels=%d  bonds=%d  ports=%d")
+        :format(island_id,
+                util.table_count(voxels),
+                util.table_count(bonds),
+                util.table_count(ports)))
+
+      -- debug: list every voxel
+      for h in pairs(voxels) do
+        minetest.log("action", ("[detector]   +voxel %08x"):format(h))
+      end
+
       for h, _ in pairs(voxels) do assigned[h] = island_id end
       island_store[island_id] = {
         id = island_id,
